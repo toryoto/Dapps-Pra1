@@ -2,6 +2,8 @@
 import { ethers } from "ethers";
 import React, { useEffect, useState } from "react";
 
+import abi from "./utils/EthEcho.json";
+
 /* ボタンのスタイルをまとめた変数 */
 const buttonStyle =
   "flex w-full justify-center rounded-md px-3 py-1.5 text-sm font-semibold leading-6 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
@@ -26,6 +28,8 @@ export default function Home() {
   console.log("currentAccount: ", currentAccount);
   /* ユーザーのメッセージを保存するために使用する状態変数 */
   const [messageValue, setMessageValue] = useState<string>("");
+  const contractAddress = "0x760501074aCEed814FAa7cabdaEe788ceE5C89d6";
+  const contractABI = abi.abi;
 
   const checkIfWalletIsConnected = async () => {
     const { ethereum } = window as any;
@@ -63,6 +67,35 @@ export default function Home() {
       console.log("Connected: ", accounts[0]);
       setCurrentAccount(accounts[0]);
 
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const writeEcho = async () => {
+    try {
+      const { ethereum } = window as any;
+
+      if (ethereum) {
+        // ProviderはWebアプリがイーサリアムと対話するための手段を提供
+        const provider = new ethers.BrowserProvider(ethereum);
+        // トランザクションに著名する権限を持つアカウントを取得
+        // 通常ユーザの現在のアカウント
+        const signer = await provider.getSigner();
+
+        // ABIの参照
+        const ethEchoContract = new ethers.Contract(
+          contractAddress,
+          contractABI,
+          signer
+        );
+
+        let count = await ethEchoContract.getTotalEchoes();
+        console.log("Retrieved total echo count...", count.toNumber);
+        console.log("Signer:", signer);
+      } else {
+        console.log("Ethereum object doesn't exist!");
+      }
     } catch (error) {
       console.log(error);
     }
@@ -122,7 +155,7 @@ export default function Home() {
         {currentAccount && (
           <button
             className={`${buttonStyle} bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600`}
-            //onClick={writeEcho}
+            onClick={writeEcho}
           >
             Echo🏔️
           </button>
