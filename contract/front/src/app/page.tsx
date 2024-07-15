@@ -1,4 +1,5 @@
 "use client";
+import { ethers } from "ethers";
 import React, { useEffect, useState } from "react";
 
 /* ボタンのスタイルをまとめた変数 */
@@ -44,7 +45,28 @@ export default function Home() {
     } else {
       console.log("No authorized account found");
     }
-  }
+  };
+
+  const connectWallet = async () => {
+    try {
+      const { ethereum } = window as any;
+      if (!ethereum) {
+        alert("Get MetaMask!");
+        return
+      }
+
+      // as String[]は型のアサーション
+      // 返される値が文字列の配列であることを明示的に指定している
+      const accounts = (await ethereum.request({
+        method: "eth_requestAccounts",
+      })) as string[];
+      console.log("Connected: ", accounts[0]);
+      setCurrentAccount(accounts[0]);
+
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   useEffect(() => {
     checkIfWalletIsConnected();
@@ -80,7 +102,7 @@ export default function Home() {
         {/* ウォレットを接続するボタン */}
         {!currentAccount && (
           <button
-            //onClick={connectWallet}
+            onClick={connectWallet}
             type="button"
             className={`${buttonStyle} bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600`}
           >
