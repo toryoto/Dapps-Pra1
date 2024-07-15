@@ -1,113 +1,133 @@
-import Image from "next/image";
+"use client";
+import React, { useEffect, useState } from "react";
+
+/* ボタンのスタイルをまとめた変数 */
+const buttonStyle =
+  "flex w-full justify-center rounded-md px-3 py-1.5 text-sm font-semibold leading-6 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
+
+/* 履歴の詳細を表示するコンポーネント */
+interface EchoDetailsProps {
+  title: string;
+  //value: string;
+}
+const EchoDetails: React.FC<EchoDetailsProps> = ({ title }) => (
+  <div className="py-3 px-4 block w-full border-gray-200 rounded-lg dark:bg-slate-900 dark:border-gray-700 dark:text-gray-100">
+    <div>
+      <p className="font-semibold">{title}</p>
+      <p>{/*value*/}</p>
+    </div>
+  </div>
+);
 
 export default function Home() {
+  /* ユーザーのパブリックウォレットを保存するために使用する状態変数 */
+  const [currentAccount, setCurrentAccount] = useState<string>("");
+  console.log("currentAccount: ", currentAccount);
+  /* ユーザーのメッセージを保存するために使用する状態変数 */
+  const [messageValue, setMessageValue] = useState<string>("");
+
+  const checkIfWalletIsConnected = async () => {
+    const { ethereum } = window as any;
+    if (!ethereum) { 
+      console.log("Make sure you have MetaMask!");
+    } else {
+      console.log("We have the etherum object", ethereum);
+    }
+
+    // accountsにサイトを訪れたユーザのウォレットアカウントアドレスを格納
+    // 複数持っていることを加味している
+    const accounts = await ethereum.request({ method: "eth_accounts" });
+    if (accounts.length !== 0) {
+      const account = accounts[0];
+      console.log("Found an authorized account", account);
+      setCurrentAccount(account);
+    } else {
+      console.log("No authorized account found");
+    }
+  }
+
+  useEffect(() => {
+    checkIfWalletIsConnected();
+  }, [])
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
+      {/* ヘッダー */}
+      <div className="sm:mx-auto sm:w-full sm:max-w-lg">
+        <h1 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-white-900">
+          EthEcho🏔️
+        </h1>
+        <div className="bio mt-2 mb-8">
+          イーサリアムウォレットを接続して、メッセージを作成。あなたのメッセージをチェーンに響かせましょう！
         </div>
       </div>
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
+      <div className="sm:mx-auto sm:w-full sm:max-w-lg space-y-6">
+        <div>
+          {/* メッセージボックス */}
+          {currentAccount && (
+            <textarea
+              placeholder="メッセージはこちら"
+              name="messageArea"
+              id="message"
+              value={messageValue}
+              onChange={(e) => setMessageValue(e.target.value)}
+              className="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400 dark:focus:ring-gray-600"
+            />
+          )}
+        </div>
+
+        {/* ウォレットを接続するボタン */}
+        {!currentAccount && (
+          <button
+            //onClick={connectWallet}
+            type="button"
+            className={`${buttonStyle} bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600`}
+          >
+            Connect Wallet
+          </button>
+        )}
+        {currentAccount && (
+          <button
+            disabled={true}
+            title="Wallet Connected"
+            className={`${buttonStyle} bg-indigo-900 text-white cursor-not-allowed`}
+          >
+            Wallet Connected
+          </button>
+        )}
+        {/* コントラクトに書き込むボタン */}
+        {currentAccount && (
+          <button
+            className={`${buttonStyle} bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600`}
+            //onClick={writeEcho}
+          >
+            Echo🏔️
+          </button>
+        )}
+        {/* 最新の書き込みを読み込むボタン */}
+        {currentAccount && (
+          <button
+            className={`${buttonStyle} bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600 mt-6`}
+            //onClick={() => setDisplayedEcho(latestEcho)}
+          >
+            Load Latest Echo🏔️
+          </button>
+        )}
+        {/* 履歴を表示する */}
+        {/* {currentAccount && latestEcho && (
+          <div className="py-3 px-4 block w-full border-gray-200 rounded-lg dark:bg-slate-900 dark:border-gray-700 dark:text-gray-100">
+            <div>
+              <EchoDetails title="Address" value={latestEcho.address} />
+              <EchoDetails
+                title="Time🦴🐕💨"
+                value={latestEcho.timestamp.toString()}
+              />
+              <EchoDetails title="Message" value={latestEcho.message} />
+            </div>
+          </div>
+        )} */}
       </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    </div>
   );
 }
