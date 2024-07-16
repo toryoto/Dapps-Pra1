@@ -84,6 +84,7 @@ export default function Home() {
         const signer = await provider.getSigner();
 
         // ABIの参照
+        // ether.jsのコントラクタインスタンスを取得
         const ethEchoContract = new ethers.Contract(
           contractAddress,
           contractABI,
@@ -92,7 +93,14 @@ export default function Home() {
 
         let count = await ethEchoContract.getTotalEchoes();
         console.log("Retrieved total echo count...", count.toNumber);
-        console.log("Signer:", signer);
+        
+        // コントラクタにEchoを書きこむ
+        const echoTxn = await ethEchoContract.writeEcho();
+        console.log("Mining...", echoTxn.hash);
+        await echoTxn.wait();
+        console.log("Mined -- ", echoTxn.hash);
+        count = await ethEchoContract.getTotalEchoes();
+        console.log("Retrieved total echo count...", Number(count));
       } else {
         console.log("Ethereum object doesn't exist!");
       }
