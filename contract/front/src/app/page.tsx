@@ -1,8 +1,6 @@
 "use client";
-import { ethers } from "ethers";
 import React, { useEffect, useState } from "react";
-
-import abi from "./utils/EthEcho.json";
+import { connectWallet, writeEcho, getLatestEcho, setupEchoListener } from "../utils/ethereumUtils";
 
 /* ボタンのスタイルをまとめた変数 */
 const buttonStyle =
@@ -25,175 +23,45 @@ const EchoDetails: React.FC<EchoDetailsProps> = ({ title, value }) => (
 export default function Home() {
   /* ユーザーのパブリックウォレットを保存するために使用する状態変数 */
   const [currentAccount, setCurrentAccount] = useState<string>("");
-  console.log("currentAccount: ", currentAccount);
   /* ユーザーのメッセージを保存するために使用する状態変数 */
   const [messageValue, setMessageValue] = useState<string>("");
   const [latestEcho, setLatestEcho] = useState<Echo | null>(null);
+
   interface Echo {
     address: string;
     timestamp: Date;
     message: string;
   }
 
+  const handleConnectWallet = async () => {
+    const account = await connectWallet();
+    if (account) setCurrentAccount(account);
+  };
 
-  // デプロイされたコントラクタのアドレスとABI
-  const contractAddress = "0x3D836a8a1706C06eCfBdD40709c53ed92Edb6037";
-  const contractABI = abi.abi;
-
-  const checkIfWalletIsConnected = async () => {
-    const { ethereum } = window as any;
-    if (!ethereum) { 
-      console.log("Make sure you have MetaMask!");
-    } else {
-      console.log("We have the etherum object", ethereum);
-    }
-
-    // accountsにサイトを訪れたユーザのウォレットアカウントアドレスを格納
-    // 複数持っていることを加味している
-    const accounts = await ethereum.request({ method: "eth_accounts" });
-    if (accounts.length !== 0) {
-      const account = accounts[0];
-      console.log("Found an authorized account", account);
-      setCurrentAccount(account);
-    } else {
-      console.log("No authorized account found");
+  const handleWriteEcho = async () => {
+    const result = await writeEcho(messageValue);
+    if (result) {
+      // Optionally, you can update the UI or fetch the latest echo here
     }
   };
 
-  const connectWallet = async () => {
-    try {
-      const { ethereum } = window as any;
-      if (!ethereum) {
-        alert("Get MetaMask!");
-        return
-      }
-
-      // as String[]は型のアサーション
-      // 返される値が文字列の配列であることを明示的に指定している
-      const accounts = (await ethereum.request({
-        method: "eth_requestAccounts",
-      })) as string[];
-      console.log("Connected: ", accounts[0]);
-      setCurrentAccount(accounts[0]);
-
-    } catch (error) {
-      console.log(error);
-    }
+  const handleGetLatestEcho = async () => {
+    const echo = await getLatestEcho();
+    if (echo) setLatestEcho(echo);
   };
 
-  const writeEcho = async () => {
-    try {
-      const { ethereum } = window as any;
-
-      if (ethereum) {
-        // ProviderはWebアプリがイーサリアムと対話するための手段を提供
-        const provider = new ethers.BrowserProvider(ethereum);
-        // トランザクションに著名する権限を持つアカウントを取得
-        // 通常ユーザの現在のアカウント
-        const signer = await provider.getSigner();
-
-        // ABIの参照
-        // ether.jsのコントラクタインスタンスを取得
-        const ethEchoContract = new ethers.Contract(
-          contractAddress,
-          contractABI,
-          signer
-        );
-
-        let count = await ethEchoContract.getTotalEchoes();
-        console.log("Retrieved total echo count...", count.toNumber);
-        
-        // コントラクタにEchoを書きこむ
-        const echoTxn = await ethEchoContract.writeEcho(messageValue, {
-          gasLimit: 300000,
-        });
-
-        console.log("Mining...", echoTxn.hash);
-        await echoTxn.wait();
-        console.log("Mined -- ", echoTxn.hash);
-        count = await ethEchoContract.getTotalEchoes();
-        console.log("Retrieved total echo count...", Number(count));
-        
-      } else {
-        console.log("Ethereum object doesn't exist!");
-      }
-    } catch (error) {
-      console.log(error);
-    };
-  };
-  
-  const getLatestEcho = async () => {
-    const { ethereum } = window as any;
-    try {
-      if (ethereum) {
-        const provider = new ethers.BrowserProvider(ethereum);
-        const signer = await provider.getSigner();
-        const ethEchoContract = new ethers.Contract(
-          contractAddress,
-          contractABI,
-          signer
-        );
-
-        /* コントラクトからgetLatestEchoメソッドを呼び出す */
-        const echo = await ethEchoContract.getLatestEcho();
-
-        /* UIに必要なのは、アドレス、タイムスタンプ、メッセージだけなので、以下のように設定する */
-        const newLatestEcho: Echo = {
-          address: echo.echoer,
-          timestamp: new Date(Number(echo.timestamp) * 1000),
-          message: echo.message,
-        };
-
-        /* React Stateにデータを格納する */
-        setLatestEcho(newLatestEcho);
-      } else {
-        console.log("Ethereum object doesn't exist!");
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  
   useEffect(() => {
-    (async () => {
-      checkIfWalletIsConnected();
-      let ethEchoContract: ethers.Contract;
+    const cleanup = setupEchoListener((from, timestamp, message) => {
+      // コールバック関数の処理（Echoをセットするのみ→void）
+      setLatestEcho({
+        address: from,
+        timestamp: new Date(timestamp * 1000),
+        message: message,
+      });
+    });
 
-      // 新しいエコーが発生したときに、その情報（3つの引数）を受け取り、画面に反映させる
-      // コールバック関数
-      // イベントリスナの働き
-      const onNewEcho = (from: string, timestamp: number, message: string) => {
-        console.log("NewEchoが呼ばれました", from, timestamp, message);
-
-        const setLatestEcho: Echo = {
-          address: from,
-          timestamp: new Date(timestamp * 1000),
-          message: message,
-        };
-      };
-
-      // NewEchoイベントがコントラクタから発信されたときに、情報を受け取る
-      if ((window as any).ethereum) {
-        const provider = new ethers.BrowserProvider((window as any).ethereum);
-        const signer = await provider.getSigner();
-
-        ethEchoContract = new ethers.Contract(
-          contractAddress,
-          contractABI,
-          signer
-        );
-
-        // NewEchoイベントが発火されたときにonNewEcho関数を呼び出す
-        ethEchoContract.on("NewEcho", onNewEcho);
-
-        // メモリーリークを防ぐ
-        return () => {
-          if (ethEchoContract) ethEchoContract.off("NewEcho", onNewEcho);
-        }
-      }
-    })
-  }, [contractAddress, contractABI]);
+    return cleanup;
+  }, []);
 
   return (
     <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
@@ -225,7 +93,7 @@ export default function Home() {
         {/* ウォレットを接続するボタン */}
         {!currentAccount && (
           <button
-            onClick={connectWallet}
+            onClick={handleConnectWallet}
             type="button"
             className={`${buttonStyle} bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600`}
           >
@@ -245,7 +113,7 @@ export default function Home() {
         {currentAccount && (
           <button
             className={`${buttonStyle} bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600`}
-            onClick={writeEcho}
+            onClick={handleWriteEcho}
           >
             Echo🏔️
           </button>
@@ -254,7 +122,7 @@ export default function Home() {
         {currentAccount && (
           <button
             className={`${buttonStyle} bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600 mt-6`}
-            onClick={getLatestEcho}
+            onClick={handleGetLatestEcho}
           >
             Load Latest Echo🏔️
           </button>
