@@ -11,13 +11,13 @@ const buttonStyle =
 /* 履歴の詳細を表示するコンポーネント */
 interface EchoDetailsProps {
   title: string;
-  //value: string;
+  value: string;
 }
-const EchoDetails: React.FC<EchoDetailsProps> = ({ title }) => (
+const EchoDetails: React.FC<EchoDetailsProps> = ({ title, value }) => (
   <div className="py-3 px-4 block w-full border-gray-200 rounded-lg dark:bg-slate-900 dark:border-gray-700 dark:text-gray-100">
     <div>
       <p className="font-semibold">{title}</p>
-      <p>{/*value*/}</p>
+      <p>{ value }</p>
     </div>
   </div>
 );
@@ -28,7 +28,16 @@ export default function Home() {
   console.log("currentAccount: ", currentAccount);
   /* ユーザーのメッセージを保存するために使用する状態変数 */
   const [messageValue, setMessageValue] = useState<string>("");
-  const contractAddress = "0x760501074aCEed814FAa7cabdaEe788ceE5C89d6";
+  const [latestEcho, setLatestEcho] = useState<Echo | null>(null);
+  interface Echo {
+    address: string;
+    timestamp: Date;
+    message: string;
+  }
+
+
+  // デプロイされたコントラクタのアドレスとABI
+  const contractAddress = "0x3D836a8a1706C06eCfBdD40709c53ed92Edb6037";
   const contractABI = abi.abi;
 
   const checkIfWalletIsConnected = async () => {
@@ -95,12 +104,48 @@ export default function Home() {
         console.log("Retrieved total echo count...", count.toNumber);
         
         // コントラクタにEchoを書きこむ
-        const echoTxn = await ethEchoContract.writeEcho();
+        const echoTxn = await ethEchoContract.writeEcho(messageValue, {
+          gasLimit: 300000,
+        });
+
         console.log("Mining...", echoTxn.hash);
         await echoTxn.wait();
         console.log("Mined -- ", echoTxn.hash);
         count = await ethEchoContract.getTotalEchoes();
         console.log("Retrieved total echo count...", Number(count));
+        
+      } else {
+        console.log("Ethereum object doesn't exist!");
+      }
+    } catch (error) {
+      console.log(error);
+    };
+  };
+  
+  const getLatestEcho = async () => {
+    const { ethereum } = window as any;
+    try {
+      if (ethereum) {
+        const provider = new ethers.BrowserProvider(ethereum);
+        const signer = await provider.getSigner();
+        const ethEchoContract = new ethers.Contract(
+          contractAddress,
+          contractABI,
+          signer
+        );
+
+        /* コントラクトからgetLatestEchoメソッドを呼び出す */
+        const echo = await ethEchoContract.getLatestEcho();
+
+        /* UIに必要なのは、アドレス、タイムスタンプ、メッセージだけなので、以下のように設定する */
+        const newLatestEcho: Echo = {
+          address: echo.echoer,
+          timestamp: new Date(Number(echo.timestamp) * 1000),
+          message: echo.message,
+        };
+
+        /* React Stateにデータを格納する */
+        setLatestEcho(newLatestEcho);
       } else {
         console.log("Ethereum object doesn't exist!");
       }
@@ -109,9 +154,46 @@ export default function Home() {
     }
   };
 
+  
   useEffect(() => {
-    checkIfWalletIsConnected();
-  }, [])
+    (async () => {
+      checkIfWalletIsConnected();
+      let ethEchoContract: ethers.Contract;
+
+      // 新しいエコーが発生したときに、その情報（3つの引数）を受け取り、画面に反映させる
+      // コールバック関数
+      // イベントリスナの働き
+      const onNewEcho = (from: string, timestamp: number, message: string) => {
+        console.log("NewEchoが呼ばれました", from, timestamp, message);
+
+        const setLatestEcho: Echo = {
+          address: from,
+          timestamp: new Date(timestamp * 1000),
+          message: message,
+        };
+      };
+
+      // NewEchoイベントがコントラクタから発信されたときに、情報を受け取る
+      if ((window as any).ethereum) {
+        const provider = new ethers.BrowserProvider((window as any).ethereum);
+        const signer = await provider.getSigner();
+
+        ethEchoContract = new ethers.Contract(
+          contractAddress,
+          contractABI,
+          signer
+        );
+
+        // NewEchoイベントが発火されたときにonNewEcho関数を呼び出す
+        ethEchoContract.on("NewEcho", onNewEcho);
+
+        // メモリーリークを防ぐ
+        return () => {
+          if (ethEchoContract) ethEchoContract.off("NewEcho", onNewEcho);
+        }
+      }
+    })
+  }, [contractAddress, contractABI]);
 
   return (
     <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
@@ -172,24 +254,30 @@ export default function Home() {
         {currentAccount && (
           <button
             className={`${buttonStyle} bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600 mt-6`}
-            //onClick={() => setDisplayedEcho(latestEcho)}
+            onClick={getLatestEcho}
           >
             Load Latest Echo🏔️
           </button>
         )}
         {/* 履歴を表示する */}
-        {/* {currentAccount && latestEcho && (
+        {currentAccount && latestEcho && (
           <div className="py-3 px-4 block w-full border-gray-200 rounded-lg dark:bg-slate-900 dark:border-gray-700 dark:text-gray-100">
             <div>
-              <EchoDetails title="Address" value={latestEcho.address} />
+              <EchoDetails 
+                title="Address"
+                value={latestEcho.address}
+              />
               <EchoDetails
                 title="Time🦴🐕💨"
                 value={latestEcho.timestamp.toString()}
               />
-              <EchoDetails title="Message" value={latestEcho.message} />
+              <EchoDetails
+                title="Message" 
+                value={latestEcho.message}
+              />
             </div>
           </div>
-        )} */}
+        )}
       </div>
     </div>
   );
