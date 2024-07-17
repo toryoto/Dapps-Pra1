@@ -26,6 +26,8 @@ export default function Home() {
   /* ユーザーのメッセージを保存するために使用する状態変数 */
   const [messageValue, setMessageValue] = useState<string>("");
   const [latestEcho, setLatestEcho] = useState<Echo | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   interface Echo {
     address: string;
@@ -39,9 +41,26 @@ export default function Home() {
   };
 
   const handleWriteEcho = async () => {
-    const result = await writeEcho(messageValue);
-    if (result) {
-      // Optionally, you can update the UI or fetch the latest echo here
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await writeEcho(messageValue);
+      if (result) {
+        console.log("Echo successfully written:", result);
+        setMessageValue("");
+        const latestEcho = await getLatestEcho();
+        if (latestEcho) {
+          setLatestEcho(latestEcho);
+        }
+        alert("Echo successfully written to the blockchain!");
+      } else {
+        throw new Error("Failed to write Echo");
+      }
+    } catch (err) {
+      console.error("Error writing Echo:", err);
+      setError("Failed to write Echo. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -112,10 +131,15 @@ export default function Home() {
         {/* コントラクトに書き込むボタン */}
         {currentAccount && (
           <button
-            className={`${buttonStyle} bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600`}
             onClick={handleWriteEcho}
+            disabled={isLoading || !messageValue.trim()}
+            className={`${buttonStyle} ${
+              isLoading || !messageValue.trim()
+                ? "bg-indigo-300 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-500"
+            } text-white focus-visible:outline-indigo-600`}
           >
-            Echo🏔️
+            {isLoading ? "Processing..." : "Echo🏔️"}
           </button>
         )}
         {/* 最新の書き込みを読み込むボタン */}
@@ -126,6 +150,9 @@ export default function Home() {
           >
             Load Latest Echo🏔️
           </button>
+        )}
+        {error && (
+          <div className="text-red-500 text-center mt-2">{error}</div>
         )}
         {/* 履歴を表示する */}
         {currentAccount && latestEcho && (
