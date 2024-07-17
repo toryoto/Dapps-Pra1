@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { connectWallet, writeEcho, getLatestEcho, setupEchoListener } from "@/utils/ethereumUtils";
+import { connectWallet, writeEcho, getLatestEcho, setupEchoListener } from "../utils/ethereumUtils";
 
 /* ボタンのスタイルをまとめた変数 */
 const buttonStyle =
