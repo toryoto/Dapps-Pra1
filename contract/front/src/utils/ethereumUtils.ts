@@ -1,7 +1,7 @@
 import { ethers, isAddress } from "ethers";
 import abi from "../app/utils/EthEcho.json";
 
-const contractAddress = "0x3D836a8a1706C06eCfBdD40709c53ed92Edb6037";
+const contractAddress = "0x874ee0BDd0D98893C9FFC5d8aC15e854Cd801feC";
 const contractABI = abi.abi;
 
 export const getEthereumObject = () => (window as any).ethereum;
