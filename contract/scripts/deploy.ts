@@ -1,28 +1,28 @@
 import { ethers } from "hardhat";
 
-const main = async () => {
-  const [deployer] = await ethers.getSigners();
-  // デプロイアカウントの残高(wei)
-  const accountBalance = await deployer.provider.getBalance(deployer.address);
-  const echoContractFactory = await ethers.getContractFactory("EthEcho");
-  const echoContract = await echoContractFactory.deploy();
-  const ethEcho = await echoContract.waitForDeployment();
-
-  console.log("Deploying contracts with account: ", deployer.address);
-  console.log("Account balance: ", accountBalance.toString());
-  const deployedContractAddress = await ethEcho.getAddress();
-  console.log("Contract deployed to:", deployedContractAddress);
-  console.log("Contract deployed by: ", deployer.address);
-};
-
-const runMain = async () => {
+async function main() {
   try {
-    await main();
-    process.exit(0);
-  } catch (error) {
-    console.error(error);
-    process.exit(1);
-  }
-};
+    console.log("Deploying EthEcho contract...");
 
-runMain();
+    const [deployer] = await ethers.getSigners();
+    console.log("Deploying contract with account:", deployer.address);
+
+    const accountBalance = await deployer.provider.getBalance(deployer.address);
+    console.log("Account balance: ", accountBalance.toString())
+
+    const echoContractFactory = await ethers.getContractFactory("EthEcho");
+    const echoContract = await echoContractFactory.deploy();
+    const ethEcho = await echoContract.waitForDeployment();
+
+    console.log("EthEcho deployed to:", await ethEcho.getAddress());
+    console.log("Deployment completed successfully!");
+  } catch (error) {
+    console.error("Error during deployment:", error);
+    process.exitCode = 1;
+  }
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
