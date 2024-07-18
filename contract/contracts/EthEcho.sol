@@ -26,16 +26,16 @@ contract EthEcho {
     console.log("EthEcho contract deployed with IPFS integration");
   }
 
-  function writeEcho(string memory _message) public {
+  function writeEcho(string memory _cid) public {
     _totalEchoes += 1;
     console.log("%s has echoed with CID: ", msg.sender, _cid);
 
-    // 最新のメッセージを保持する変数にメッセージを代入
-    _latestEcho = Echo(msg.sender, _message, block.timestamp);
+    Echo memory newEcho = Echo(msg.sender, _cid, block.timestamp);
+    _echoesMap[_totalEchoes] = newEcho;
+    _echoIds.push(_totalEchoes);
 
-    // emitはeventを発火させ、外部アプリケーションや他のスマートコントラクタに通知を送信
-    // 今回は引数の変数をフロントエンドに送信
-    emit NewEcho(msg.sender, block.timestamp, _message);
+    // 新しいcidなどを引数にイベントを発火
+    emit NewEcho(msg.sender, block.timestamp, _cid);
   }
 
   function getLatestEcho() public view returns (Echo memory) {
