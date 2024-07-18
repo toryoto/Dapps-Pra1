@@ -57,4 +57,9 @@ contract EthEcho {
     }
     return allEchoes;
   }
+
+  function getEchoById(uint256 id) public view returns (Echo memory) {
+    require(id > 0 && id <= _totalEchoes, "Invalid echo ID");
+    return _echoesMap[id];
+  }
 }
