@@ -48,4 +48,13 @@ contract EthEcho {
   function getTotalEchoes() public view returns (uint256) {
     return _totalEchoes;
   }
+
+  function getAllEchoes() public view returns (Echo[] memory) {
+    // 空のEcho構造体配列に最新のエコーを代入する
+    Echo[] memory allEchoes = new Echo[](_totalEchoes);
+    for (uint256 i = 1; i <= _totalEchoes; i++) {
+      allEchoes[i-1] = _echoesMap[i];
+    }
+    return allEchoes;
+  }
 }
