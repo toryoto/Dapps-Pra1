@@ -9,24 +9,26 @@ contract EthEcho {
 
   // eventとは、スマートコントラクタで起こったことを外部に通知するもの
   // event イベント名(通知したい値)
-  event NewEcho(address indexed from, uint256 timestamp, string message);
+  event NewEcho(address indexed from, uint256 timestamp, string cid);
 
   // Echoの構造体を定義する
   struct Echo {
     address echoer; // Echoを送ったユーザのアドレス
-    string message;
+    string cid;
     uint256 timestamp;
   }
 
-  Echo private _latestEcho;
+  // keyからvalueを参照する
+  mapping(uint256 => Echo) private _echoesMap;
+  uint256[] private _echoIds;
 
   constructor() {
-    console.log("Here is my first smart contract");
+    console.log("EthEcho contract deployed with IPFS integration");
   }
 
   function writeEcho(string memory _message) public {
     _totalEchoes += 1;
-    console.log("%s has echoed!", msg.sender);
+    console.log("%s has echoed with CID: ", msg.sender, _cid);
 
     // 最新のメッセージを保持する変数にメッセージを代入
     _latestEcho = Echo(msg.sender, _message, block.timestamp);
