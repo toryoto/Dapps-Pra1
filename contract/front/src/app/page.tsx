@@ -1,37 +1,35 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { connectWallet, writeEcho, getLatestEcho, setupEchoListener } from "../utils/ethereumUtils";
+import { connectWallet, writeEchoContract, getAllEchoes, setupEchoListener } from "../utils/ethereumUtils";
 
-/* ボタンのスタイルをまとめた変数 */
 const buttonStyle =
   "flex w-full justify-center rounded-md px-3 py-1.5 text-sm font-semibold leading-6 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
 
-/* 履歴の詳細を表示するコンポーネント */
 interface EchoDetailsProps {
   title: string;
   value: string;
 }
+
 const EchoDetails: React.FC<EchoDetailsProps> = ({ title, value }) => (
   <div className="py-3 px-4 block w-full border-gray-200 rounded-lg dark:bg-slate-900 dark:border-gray-700 dark:text-gray-100">
     <div>
       <p className="font-semibold">{title}</p>
-      <p>{ value }</p>
+      <p>{value}</p>
     </div>
   </div>
 );
 
-export default function Home() {
-  /* ユーザーのパブリックウォレットを保存するために使用する状態変数 */
-  const [currentAccount, setCurrentAccount] = useState<string>("");
-  /* ユーザーのメッセージを保存するために使用する状態変数 */
-  const [messageValue, setMessageValue] = useState<string>("");
-  const [latestEcho, setLatestEcho] = useState<Echo | null>(null);
+interface ProcessedEcho {
+  address: string;
+  timestamp: Date;
+  cid: string;
+  message: string | null;
+}
 
-  interface Echo {
-    address: string;
-    timestamp: Date;
-    message: string;
-  }
+export default function Home() {
+  const [currentAccount, setCurrentAccount] = useState<string>("");
+  const [messageValue, setMessageValue] = useState<string>("");
+  const [allEchoes, setAllEchoes] = useState<ProcessedEcho[]>([]);
 
   const handleConnectWallet = async () => {
     const account = await connectWallet();
@@ -39,45 +37,46 @@ export default function Home() {
   };
 
   const handleWriteEcho = async () => {
-    const result = await writeEcho(messageValue);
+    const result = await writeEchoContract(messageValue);
     if (result) {
-      // Optionally, you can update the UI or fetch the latest echo here
+      fetchAllEchoes();
     }
   };
 
-  const handleGetLatestEcho = async () => {
-    const echo = await getLatestEcho();
-    if (echo) setLatestEcho(echo);
+  const fetchAllEchoes = async () => {
+    const echoes = await getAllEchoes();
+    if (echoes) {
+      setAllEchoes(echoes);
+    }
   };
 
   useEffect(() => {
-    const cleanup = setupEchoListener((from, timestamp, message) => {
-      // コールバック関数の処理（Echoをセットするのみ→void）
-      setLatestEcho({
-        address: from,
-        timestamp: new Date(timestamp * 1000),
-        message: message,
-      });
+    if (currentAccount) {
+      fetchAllEchoes();
+    }
+
+    const cleanup = setupEchoListener(async (from, timestamp, cid) => {
+      fetchAllEchoes();
     });
 
     return cleanup;
-  }, []);
+  }, [currentAccount]);
 
   return (
     <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
-      {/* ヘッダー */}
+      {/* Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-lg">
         <h1 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-white-900">
           EthEcho🏔️
         </h1>
         <div className="bio mt-2 mb-8">
-          イーサリアムウォレットを接続して、メッセージを作成。あなたのメッセージをチェーンに響かせましょう！
+          イーサリアムウォレットを接続して、メッセージをブロックチェーン上に保存。
         </div>
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-lg space-y-6">
+        {/* Message Box */}
         <div>
-          {/* メッセージボックス */}
           {currentAccount && (
             <textarea
               placeholder="メッセージはこちら"
@@ -90,7 +89,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* ウォレットを接続するボタン */}
+        {/* Connect Wallet Button */}
         {!currentAccount && (
           <button
             onClick={handleConnectWallet}
@@ -109,7 +108,7 @@ export default function Home() {
             Wallet Connected
           </button>
         )}
-        {/* コントラクトに書き込むボタン */}
+        {/* Write to Contract Button */}
         {currentAccount && (
           <button
             className={`${buttonStyle} bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600`}
@@ -118,32 +117,18 @@ export default function Home() {
             Echo🏔️
           </button>
         )}
-        {/* 最新の書き込みを読み込むボタン */}
-        {currentAccount && (
-          <button
-            className={`${buttonStyle} bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600 mt-6`}
-            onClick={handleGetLatestEcho}
-          >
-            Load Latest Echo🏔️
-          </button>
-        )}
-        {/* 履歴を表示する */}
-        {currentAccount && latestEcho && (
-          <div className="py-3 px-4 block w-full border-gray-200 rounded-lg dark:bg-slate-900 dark:border-gray-700 dark:text-gray-100">
-            <div>
-              <EchoDetails 
-                title="Address"
-                value={latestEcho.address}
-              />
-              <EchoDetails
-                title="Time🦴🐕💨"
-                value={latestEcho.timestamp.toString()}
-              />
-              <EchoDetails
-                title="Message" 
-                value={latestEcho.message}
-              />
-            </div>
+        {/* Display All Echoes */}
+        {currentAccount && allEchoes.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">All Echoes</h2>
+            {allEchoes.map((echo, index) => (
+              <div key={index} className="py-3 px-4 block w-full border-gray-200 rounded-lg dark:bg-slate-900 dark:border-gray-700 dark:text-gray-100">
+                <EchoDetails title="Address" value={echo.address} />
+                <EchoDetails title="Time🦴🐕💨" value={echo.timestamp.toString()} />
+                <EchoDetails title="CID" value={echo.cid} />
+                <EchoDetails title="Message" value={echo.message || "No message"} />
+              </div>
+            ))}
           </div>
         )}
       </div>
