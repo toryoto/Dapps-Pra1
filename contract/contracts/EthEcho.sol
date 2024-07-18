@@ -41,9 +41,10 @@ contract EthEcho {
   }
 
   function getLatestEcho() public view returns (Echo memory) {
-    return _latestEcho;
+    require(_totalEchoes > 0, "No echoes yet");
+    return _echoesMap[_totalEchoes];
   }
-
+  
   // viewでは読み取りのみなので、ガス代が表示されない
   function getTotalEchoes() public view returns (uint256) {
     console.log("We have %d total echoes!", _totalEchoes);
