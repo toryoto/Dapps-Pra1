@@ -19,6 +19,7 @@ contract EthEcho {
   }
 
   // keyからvalueを参照する
+  // int型のidとそのEchoデータをマッピング
   mapping(uint256 => Echo) private _echoesMap;
   uint256[] private _echoIds;
 
@@ -31,6 +32,7 @@ contract EthEcho {
     console.log("%s has echoed with CID: ", msg.sender, _cid);
 
     Echo memory newEcho = Echo(msg.sender, _cid, block.timestamp);
+    // 増やしたtotalEchoの場所にnewEchoを結び付ける
     _echoesMap[_totalEchoes] = newEcho;
     _echoIds.push(_totalEchoes);
 
