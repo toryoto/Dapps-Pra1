@@ -96,23 +96,6 @@ export const getAllEchoes = async () => {
   }
 };
 
-export const getLatestEcho = async (): Promise<RawEcho | null> => {
-  const contract = await getEthEchoContract();
-  if (!contract) return null;
-
-  try {
-    const echo = await contract.getLatestEcho();
-    return {
-      echoer: echo.echoer,
-      timestamp: Number(echo.timestamp),
-      cid: echo.cid,
-    };
-  } catch (error) {
-    console.error("Failed to get latest echo:", error);
-    return null;
-  }
-};
-
 // 関数に渡される関数→コールバック関数
 export const setupEchoListener = (callback: (from: string, timestamp: number, cid: string) => void) => {
   getEthEchoContract().then(contract => {
