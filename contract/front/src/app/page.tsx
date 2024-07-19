@@ -109,10 +109,15 @@ export default function Home() {
         {/* Write to Contract Button */}
         {currentAccount && (
           <button
-            className={`${buttonStyle} bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600`}
             onClick={handleWriteEcho}
+            disabled={isLoading || !messageValue.trim()}
+            className={`${buttonStyle} ${
+              isLoading || !messageValue.trim()
+                ? "bg-indigo-300 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-500"
+            } text-white focus-visible:outline-indigo-600`}
           >
-            Echo🏔️
+            {isLoading ? "Processing..." : "Echo🏔️"}
           </button>
         )}
         {/* Display All Echoes */}
