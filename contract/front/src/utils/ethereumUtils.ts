@@ -71,15 +71,19 @@ export const writeEchoContract = async (message: string) => {
   }
 };
 
-export const getAllEchoes = async () => {
+export const getAllEchoes = async (address: string) => {
   const contract = await getEthEchoContract();
   if (!contract) return null;
 
   try {
     // ブロックチェーン上から全てのcidを取得する
     const echoes = await contract.getAllEchoes();
-    console.log(echoes)
-    const processedEchoes = await Promise.all(echoes.map(async (echo: RawEcho) => {
+    // 自分のアドレスのメッセージのみ表示する
+    const filteredEchoes = echoes.filter((echo: RawEcho) => {
+      echo.echoer.toLowerCase() === address.toLowerCase();
+    });
+
+    const processedEchoes = await Promise.all(filteredEchoes.map(async (echo: RawEcho) => {
       const message = await getMessageFromIPFS(echo.cid);
       return {
         address: echo.echoer,
