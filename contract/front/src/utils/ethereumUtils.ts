@@ -79,9 +79,9 @@ export const getAllEchoes = async (address: string) => {
     // ブロックチェーン上から全てのcidを取得する
     const echoes = await contract.getAllEchoes();
     // 自分のアドレスのメッセージのみ表示する
-    const filteredEchoes = echoes.filter((echo: RawEcho) => {
-      echo.echoer.toLowerCase() === address.toLowerCase();
-    });
+    const filteredEchoes = echoes.filter((echo: RawEcho) => 
+      echo.echoer.toLowerCase() === address.toLowerCase()
+    );
 
     const processedEchoes = await Promise.all(filteredEchoes.map(async (echo: RawEcho) => {
       const message = await getMessageFromIPFS(echo.cid);
