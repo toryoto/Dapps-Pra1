@@ -9,40 +9,57 @@ contract EthEcho {
 
   // eventとは、スマートコントラクタで起こったことを外部に通知するもの
   // event イベント名(通知したい値)
-  event NewEcho(address indexed from, uint256 timestamp, string message);
+  event NewEcho(address indexed from, uint256 timestamp, string cid);
 
   // Echoの構造体を定義する
   struct Echo {
     address echoer; // Echoを送ったユーザのアドレス
-    string message;
+    string cid;
     uint256 timestamp;
   }
 
-  Echo private _latestEcho;
+  // keyからvalueを参照する
+  // int型のidとそのEchoデータをマッピング
+  mapping(uint256 => Echo) private _echoesMap;
+  uint256[] private _echoIds;
 
   constructor() {
-    console.log("Here is my first smart contract");
+    console.log("EthEcho contract deployed with IPFS integration");
   }
 
-  function writeEcho(string memory _message) public {
+  function writeEcho(string memory _cid) public {
     _totalEchoes += 1;
-    console.log("%s has echoed!", msg.sender);
+    console.log("%s has echoed with CID: ", msg.sender, _cid);
 
-    // 最新のメッセージを保持する変数にメッセージを代入
-    _latestEcho = Echo(msg.sender, _message, block.timestamp);
+    Echo memory newEcho = Echo(msg.sender, _cid, block.timestamp);
+    // 増やしたtotalEchoの場所にnewEchoを結び付ける
+    _echoesMap[_totalEchoes] = newEcho;
+    _echoIds.push(_totalEchoes);
 
-    // emitはeventを発火させ、外部アプリケーションや他のスマートコントラクタに通知を送信
-    // 今回は引数の変数をフロントエンドに送信
-    emit NewEcho(msg.sender, block.timestamp, _message);
+    // 新しいcidなどを引数にイベントを発火
+    emit NewEcho(msg.sender, block.timestamp, _cid);
   }
 
   function getLatestEcho() public view returns (Echo memory) {
-    return _latestEcho;
+    require(_totalEchoes > 0, "No echoes yet");
+    return _echoesMap[_totalEchoes];
   }
 
-  // viewでは読み取りのみなので、ガス代が表示されない
   function getTotalEchoes() public view returns (uint256) {
-    console.log("We have %d total echoes!", _totalEchoes);
     return _totalEchoes;
+  }
+
+  function getAllEchoes() public view returns (Echo[] memory) {
+    // 空のEcho構造体配列に最新のエコーを代入する
+    Echo[] memory allEchoes = new Echo[](_totalEchoes);
+    for (uint256 i = 1; i <= _totalEchoes; i++) {
+      allEchoes[i-1] = _echoesMap[i];
+    }
+    return allEchoes;
+  }
+
+  function getEchoById(uint256 id) public view returns (Echo memory) {
+    require(id > 0 && id <= _totalEchoes, "Invalid echo ID");
+    return _echoesMap[id];
   }
 }
