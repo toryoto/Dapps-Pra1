@@ -39,24 +39,22 @@ export default function Home() {
   const handleWriteEcho = async () => {
     const result = await writeEchoContract(messageValue);
     if (result) {
-      fetchAllEchoes();
+      fetchAllEchoes(currentAccount);
     }
   };
 
-  const fetchAllEchoes = async () => {
-    const echoes = await getAllEchoes();
-    if (echoes) {
-      setAllEchoes(echoes);
-    }
+  const fetchAllEchoes = async (address: string) => {
+    const echoes = await getAllEchoes(address);
+    if (echoes) setAllEchoes(echoes);
   };
 
   useEffect(() => {
     if (currentAccount) {
-      fetchAllEchoes();
+      fetchAllEchoes(currentAccount);
     }
 
     const cleanup = setupEchoListener(async (from, timestamp, cid) => {
-      fetchAllEchoes();
+      fetchAllEchoes(currentAccount);
     });
 
     return cleanup;

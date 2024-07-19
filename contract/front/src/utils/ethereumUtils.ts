@@ -101,6 +101,7 @@ export const getAllEchoes = async (address: string) => {
 };
 
 // 関数に渡される関数→コールバック関数
+// 受け取る関数は引数を3つ取り、戻り値はvoid
 export const setupEchoListener = (callback: (from: string, timestamp: number, cid: string) => void) => {
   getEthEchoContract().then(contract => {
     if (contract) {
