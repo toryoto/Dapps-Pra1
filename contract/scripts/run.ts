@@ -21,9 +21,13 @@ async function main() {
   await tx2.wait();
   console.log("Echo 2 written");
 
-  const tx3 = await ethEcho.connect(otherAccount).writeEcho("QmTestCID3");
+  const tx3 = await ethEcho.writeEcho("QmTestCID3");
   await tx3.wait();
-  console.log("Echo 2 written");
+  console.log("Echo 3 written");
+
+  const tx4 = await ethEcho.connect(otherAccount).writeEcho("QmTestCID4");
+  await tx4.wait();
+  console.log("Echo 4 written");
 
   // Test getAllEchoes
   console.log("Testing getAllEchoes...");
@@ -39,6 +43,11 @@ async function main() {
   const removeTx = await ethEcho.removeEcho(1);
   await removeTx.wait();
   console.log("Echo 1 removed");
+
+  console.log("Testing removeEcho...");
+  const removeTx3 = await ethEcho.removeEcho(3);
+  await removeTx3.wait();
+  console.log("Echo 3 removed");
 
   // Verify echo removal
   console.log("Verifying echo removal...");
