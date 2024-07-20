@@ -78,7 +78,7 @@ export const getAllEchoes = async (): Promise<ProcessedEcho[] | null> => {
   if (!contract) return null;
 
   try {
-    // ブロックチェーン上から全てのデータを取得する（以下が送られてくるデータ構造）
+    // ブロックチェーン上から全てのデータを取得する（以下が送られてくるデータ）
     // struct Echo {
     //   uint256 id;
     //   address echoer;
@@ -92,7 +92,7 @@ export const getAllEchoes = async (): Promise<ProcessedEcho[] | null> => {
       // IPFS上からデータを取得
       const message = await getMessageFromIPFS(echo.cid);
       return {
-        id: echo.id,
+        id: Number(echo.id),
         address: echo.echoer,
         timestamp: new Date(Number(echo.timestamp) * 1000),
         cid: echo.cid,
