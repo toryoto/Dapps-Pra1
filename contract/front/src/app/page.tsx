@@ -52,9 +52,8 @@ export default function Home() {
   };
 
   const fetchAllEchoes = async (address: string) => {
-    const echoes: ProcessedEcho[] | null = await getAllEchoes(address);
+    const echoes: ProcessedEcho[] | null = await getAllEchoes();
     if (echoes) setAllEchoes(echoes?.sort().reverse());
-
   };
 
   useEffect(() => {

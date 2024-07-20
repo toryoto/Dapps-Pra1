@@ -16,6 +16,7 @@ interface RawEcho {
 
 // IPFSからメッセージを取得し、加工後のEchoデータ
 interface ProcessedEcho {
+  id: number;
   address: string;
   timestamp: Date;
   cid: string;
@@ -71,21 +72,18 @@ export const writeEchoContract = async (message: string) => {
   }
 };
 
-export const getAllEchoes = async (address: string) => {
+export const getAllEchoes = async () => {
   const contract = await getEthEchoContract();
   if (!contract) return null;
 
   try {
     // ブロックチェーン上から全てのcidを取得する
     const echoes = await contract.getAllEchoes();
-    // 自分のアドレスのメッセージのみ表示する
-    // const filteredEchoes = echoes.filter((echo: RawEcho) => 
-    //   echo.echoer.toLowerCase() === address.toLowerCase()
-    // );
 
-    const processedEchoes = await Promise.all(echoes.map(async (echo: RawEcho) => {
+    const processedEchoes = await Promise.all(echoes.map(async (echo: RawEcho, index: number) => {
       const message = await getMessageFromIPFS(echo.cid);
       return {
+        id: index + 1,
         address: echo.echoer,
         timestamp: new Date(Number(echo.timestamp) * 1000),
         cid: echo.cid,
