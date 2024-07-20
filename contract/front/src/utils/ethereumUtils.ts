@@ -2,7 +2,7 @@ import { ethers, isAddress } from "ethers";
 import abi from "../app/utils/EthEcho.json";
 import { create } from 'kubo-rpc-client';
 
-const contractAddress = "0x874ee0BDd0D98893C9FFC5d8aC15e854Cd801feC";
+const contractAddress = "0xbCD5591FCcF04A6776A3a794DebE3D65f21EE37B";
 const contractABI = abi.abi;
 
 const ipfs = create({ url: 'http://localhost:5001' });
