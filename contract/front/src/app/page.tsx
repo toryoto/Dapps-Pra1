@@ -68,7 +68,7 @@ export default function Home() {
 
   const fetchAllEchoes = async () => {
     const echoes: ProcessedEcho[] | null = await getAllEchoes();
-    if (echoes) setAllEchoes(echoes);
+    if (echoes) setAllEchoes(echoes?.sort((a, b) => a.id - b.id).reverse());
     console.log(echoes);
   };
 
