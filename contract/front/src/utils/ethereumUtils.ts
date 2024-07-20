@@ -94,7 +94,7 @@ export const getAllEchoes = async (): Promise<ProcessedEcho[] | null> => {
       return {
         id: Number(echo.id),
         address: echo.echoer,
-        timestamp: new Date(Number(echo.timestamp) * 1000),
+        timestamp: new Date(Number(echo.timestamp) * 1000).toLocaleDateString('sv-SE'),
         cid: echo.cid,
         message: message,
       };
