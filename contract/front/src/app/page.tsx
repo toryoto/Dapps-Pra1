@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { connectWallet, writeEchoContract, getAllEchoes, setupEchoListener } from "../utils/ethereumUtils";
-import { Loader2 } from "lucide-react";
+import { connectWallet, writeEchoContract, getAllEchoes, setupEchoListener, removeEcho, setupDeleteEchoListener } from "../utils/ethereumUtils";
+import { Loader2, Trash2  } from "lucide-react";
 
 interface EchoDetailsProps {
   title: string;
@@ -16,6 +16,7 @@ const EchoDetails: React.FC<EchoDetailsProps> = ({ title, value }) => (
 );
 
 interface ProcessedEcho {
+  id: number;
   address: string;
   timestamp: Date;
   cid: string;
@@ -43,7 +44,7 @@ export default function Home() {
     try {
       const result = await writeEchoContract(messageValue);
       if (result) {
-        await fetchAllEchoes(currentAccount);
+        await fetchAllEchoes();
         setMessageValue("");
       }
     } finally {
@@ -51,22 +52,43 @@ export default function Home() {
     }
   };
 
-  const fetchAllEchoes = async (address: string) => {
-    const echoes: ProcessedEcho[] | null = await getAllEchoes(address);
-    if (echoes) setAllEchoes(echoes?.sort().reverse());
+  const handleDeleteEcho = async (echoId: number) => {
+    setIsLoading(true);
+    try {
+      const result = await removeEcho(echoId);
+      if (result) {
+        await fetchAllEchoes();
+      } else {
+        throw new Error("Failed to remove echo");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
+  const fetchAllEchoes = async () => {
+    const echoes: ProcessedEcho[] | null = await getAllEchoes();
+    if (echoes) setAllEchoes(echoes);
+    console.log(echoes);
   };
 
   useEffect(() => {
     if (currentAccount) {
-      fetchAllEchoes(currentAccount);
+      fetchAllEchoes();
     }
 
-    const cleanup = setupEchoListener(async (from, timestamp, cid) => {
-      fetchAllEchoes(currentAccount);
+    const echoCleanup = setupEchoListener(async (from, timestamp, cid) => {
+      fetchAllEchoes();
     });
 
-    return cleanup;
+    const deleteCleanup = setupDeleteEchoListener(async (echoId, from) => {
+      fetchAllEchoes();
+    });
+
+    return () => {
+      if (echoCleanup) echoCleanup();
+      if (deleteCleanup) deleteCleanup();
+    };
   }, [currentAccount]);
 
   return (
@@ -119,15 +141,24 @@ export default function Home() {
         {currentAccount && allEchoes.length > 0 && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">All Echoes</h2>
-            {allEchoes.map((echo, index) => (
-              <div key={index} className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Echo #{allEchoes.length - index}</h3>
+            {allEchoes.map((echo) => (
+              <div key={echo.id} className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 relative">
+                <h3 className="text-lg font-semibold mb-4 pr-8">Echo #{echo.id}</h3>
                 <div className="space-y-2">
                   <EchoDetails title="Address" value={echo.address} />
                   <EchoDetails title="Time🦴🐕💨" value={echo.timestamp.toString()} />
                   <EchoDetails title="CID" value={echo.cid} />
                   <EchoDetails title="Message" value={echo.message || "No message"} />
                 </div>
+                {echo.address.toLowerCase() === currentAccount.toLowerCase() && (
+                  <button
+                    onClick={() => handleDeleteEcho(echo.id)}
+                    disabled={isLoading}
+                    className="absolute top-4 right-4 text-red-500 hover:text-red-600 focus:outline-none"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                )}
               </div>
             ))}
           </div>

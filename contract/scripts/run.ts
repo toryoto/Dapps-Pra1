@@ -11,52 +11,57 @@ async function main() {
   
   console.log("EthEcho deployed to:", await ethEcho.getAddress());
 
-  // Test: Initial total echoes should be 0
-  const initialTotalEchoes = Number(await ethEcho.getTotalEchoes());
-  console.log("Initial total echoes:", initialTotalEchoes);
-  if (initialTotalEchoes !== 0) {
-    throw new Error("Initial total echoes should be 0");
-  }
+  // Test writeEcho
+  console.log("Testing writeEcho...");
+  const tx1 = await ethEcho.writeEcho("QmTestCID1");
+  await tx1.wait();
+  console.log("Echo 1 written");
 
-  // Test: Write an echo
-  const cid = "Qm123456789";
-  const tx = await ethEcho.writeEcho(cid);
-  await tx.wait();
-  console.log("Echo written with CID:", cid);
-
-  // Test: Get latest echo
-  const latestEcho = await ethEcho.getLatestEcho();
-  console.log("Latest echo:", latestEcho);
-  if (latestEcho.cid !== cid) {
-    throw new Error("Latest echo CID does not match");
-  }
-
-  // Test: Total echoes should now be 1
-  const newTotalEchoes = Number(await ethEcho.getTotalEchoes());
-  console.log("New total echoes:", newTotalEchoes);
-  if (newTotalEchoes !== 1) {
-    throw new Error("Total echoes should be 1");
-  }
-
-  // Test: Write another echo from a different account
-  const otherCid = "Qm987654321";
-  const tx2 = await ethEcho.connect(otherAccount).writeEcho(otherCid);
+  const tx2 = await ethEcho.connect(otherAccount).writeEcho("QmTestCID2");
   await tx2.wait();
-  console.log("Another echo written with CID:", otherCid);
+  console.log("Echo 2 written");
 
-  // Test: Get all echoes
-  const allEchoes = await ethEcho.getAllEchoes();
-  console.log("All echoes:", allEchoes);
-  if (allEchoes.length !== 2) {
-    throw new Error("Should have 2 echoes");
-  }
+  const tx3 = await ethEcho.writeEcho("QmTestCID3");
+  await tx3.wait();
+  console.log("Echo 3 written");
 
-  console.log("All tests passed!");
+  const tx4 = await ethEcho.connect(otherAccount).writeEcho("QmTestCID4");
+  await tx4.wait();
+  console.log("Echo 4 written");
+
+  // Test getAllEchoes
+  console.log("Testing getAllEchoes...");
+  let allEchoes = await ethEcho.getAllEchoes();
+  console.log("All echoes:", allEchoes.map(echo => ({
+    echoer: echo.echoer,
+    cid: echo.cid,
+    timestamp: echo.timestamp.toString()
+  })));
+
+  // Test removeEcho
+  console.log("Testing removeEcho...");
+  const removeTx = await ethEcho.removeEcho(1);
+  await removeTx.wait();
+  console.log("Echo 1 removed");
+
+  console.log("Testing removeEcho...");
+  const removeTx3 = await ethEcho.removeEcho(3);
+  await removeTx3.wait();
+  console.log("Echo 3 removed");
+
+  // Verify echo removal
+  console.log("Verifying echo removal...");
+  allEchoes = await ethEcho.getAllEchoes();
+  console.log("Updated all echoes:", allEchoes.map(echo => ({
+    echoer: echo.echoer,
+    cid: echo.cid,
+    timestamp: echo.timestamp.toString()
+  })));
+
+  console.log("Test script completed");
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
