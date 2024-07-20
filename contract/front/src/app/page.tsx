@@ -52,8 +52,8 @@ export default function Home() {
   };
 
   const fetchAllEchoes = async (address: string) => {
-    const echoes = await getAllEchoes(address);
-    if (echoes) setAllEchoes(echoes);
+    const echoes: ProcessedEcho[] | null = await getAllEchoes(address);
+    if (echoes) setAllEchoes(echoes?.sort().reverse());
 
   };
 
@@ -121,7 +121,7 @@ export default function Home() {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">All Echoes</h2>
             {allEchoes.map((echo, index) => (
               <div key={index} className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Echo #{index + 1}</h3>
+                <h3 className="text-lg font-semibold mb-4">Echo #{allEchoes.length - index}</h3>
                 <div className="space-y-2">
                   <EchoDetails title="Address" value={echo.address} />
                   <EchoDetails title="Time🦴🐕💨" value={echo.timestamp.toString()} />
