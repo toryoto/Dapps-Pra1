@@ -1,9 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { connectWallet, writeEchoContract, getAllEchoes, setupEchoListener } from "../utils/ethereumUtils";
-
-const buttonStyle =
-  "flex w-full justify-center rounded-md px-3 py-1.5 text-sm font-semibold leading-6 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
+import { Loader2 } from "lucide-react";
 
 interface EchoDetailsProps {
   title: string;
@@ -11,11 +9,9 @@ interface EchoDetailsProps {
 }
 
 const EchoDetails: React.FC<EchoDetailsProps> = ({ title, value }) => (
-  <div className="py-3 px-4 block w-full border-gray-200 rounded-lg dark:bg-slate-900 dark:border-gray-700 dark:text-gray-100">
-    <div>
-      <p className="font-semibold">{title}</p>
-      <p>{value}</p>
-    </div>
+  <div className="space-y-1">
+    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
+    <p className="text-sm text-gray-900 dark:text-gray-100">{value}</p>
   </div>
 );
 
@@ -30,22 +26,35 @@ export default function Home() {
   const [currentAccount, setCurrentAccount] = useState<string>("");
   const [messageValue, setMessageValue] = useState<string>("");
   const [allEchoes, setAllEchoes] = useState<ProcessedEcho[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleConnectWallet = async () => {
-    const account = await connectWallet();
-    if (account) setCurrentAccount(account);
+    setIsLoading(true);
+    try {
+      const account = await connectWallet();
+      if (account) setCurrentAccount(account);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleWriteEcho = async () => {
-    const result = await writeEchoContract(messageValue);
-    if (result) {
-      fetchAllEchoes(currentAccount);
+    setIsLoading(true);
+    try {
+      const result = await writeEchoContract(messageValue);
+      if (result) {
+        await fetchAllEchoes(currentAccount);
+        setMessageValue("");
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const fetchAllEchoes = async (address: string) => {
     const echoes = await getAllEchoes(address);
     if (echoes) setAllEchoes(echoes);
+
   };
 
   useEffect(() => {
@@ -61,75 +70,64 @@ export default function Home() {
   }, [currentAccount]);
 
   return (
-    <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
-      {/* Header */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-lg">
-        <h1 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-white-900">
-          EthEcho🏔️
-        </h1>
-        <div className="bio mt-2 mb-8">
-          イーサリアムウォレットを接続して、メッセージをブロックチェーン上に保存。
-        </div>
-      </div>
+    <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <h1 className="text-4xl font-bold text-center mb-8 text-gray-900 dark:text-white">EthEcho🏔️</h1>
+      <p className="text-center mb-8 text-gray-600 dark:text-gray-300">
+        イーサリアムウォレットを接続して、メッセージをブロックチェーン上に保存。
+      </p>
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-lg space-y-6">
-        {/* Message Box */}
-        <div>
-          {currentAccount && (
-            <textarea
-              placeholder="メッセージはこちら"
-              name="messageArea"
-              id="message"
-              value={messageValue}
-              onChange={(e) => setMessageValue(e.target.value)}
-              className="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400 dark:focus:ring-gray-600"
-            />
+      <div className="space-y-6">
+        {currentAccount && (
+          <textarea
+            placeholder="メッセージはこちら"
+            value={messageValue}
+            onChange={(e) => setMessageValue(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          />
+        )}
+
+        <div className="flex space-x-4">
+          {!currentAccount ? (
+            <button
+              onClick={handleConnectWallet}
+              disabled={isLoading}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
+            >
+              {isLoading ? <Loader2 className="inline mr-2 h-4 w-4 animate-spin" /> : null}
+              Connect Wallet
+            </button>
+          ) : (
+            <>
+              <button
+                disabled
+                className="w-1/2 bg-gray-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed"
+              >
+                Wallet Connected
+              </button>
+              <button
+                onClick={handleWriteEcho}
+                disabled={isLoading || !messageValue}
+                className="w-1/2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
+              >
+                {isLoading ? <Loader2 className="inline mr-2 h-4 w-4 animate-spin" /> : null}
+                Write Echo
+              </button>
+            </>
           )}
         </div>
 
-        {/* Connect Wallet Button */}
-        {!currentAccount && (
-          <button
-            onClick={handleConnectWallet}
-            type="button"
-            className={`${buttonStyle} bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600`}
-          >
-            Connect Wallet
-          </button>
-        )}
-        {currentAccount && (
-          <button
-            disabled={true}
-            title="Wallet Connected"
-            className={`${buttonStyle} bg-indigo-900 text-white cursor-not-allowed`}
-          >
-            Wallet Connected
-          </button>
-        )}
-        {/* Write to Contract Button */}
-        {currentAccount && (
-          <button
-            onClick={handleWriteEcho}
-            disabled={isLoading || !messageValue.trim()}
-            className={`${buttonStyle} ${
-              isLoading || !messageValue.trim()
-                ? "bg-indigo-300 cursor-not-allowed"
-                : "bg-indigo-600 hover:bg-indigo-500"
-            } text-white focus-visible:outline-indigo-600`}
-          >
-            {isLoading ? "Processing..." : "Echo🏔️"}
-          </button>
-        )}
-        {/* Display All Echoes */}
         {currentAccount && allEchoes.length > 0 && (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">All Echoes</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">All Echoes</h2>
             {allEchoes.map((echo, index) => (
-              <div key={index} className="py-3 px-4 block w-full border-gray-200 rounded-lg dark:bg-slate-900 dark:border-gray-700 dark:text-gray-100">
-                <EchoDetails title="Address" value={echo.address} />
-                <EchoDetails title="Time🦴🐕💨" value={echo.timestamp.toString()} />
-                <EchoDetails title="CID" value={echo.cid} />
-                <EchoDetails title="Message" value={echo.message || "No message"} />
+              <div key={index} className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">Echo #{index + 1}</h3>
+                <div className="space-y-2">
+                  <EchoDetails title="Address" value={echo.address} />
+                  <EchoDetails title="Time🦴🐕💨" value={echo.timestamp.toString()} />
+                  <EchoDetails title="CID" value={echo.cid} />
+                  <EchoDetails title="Message" value={echo.message || "No message"} />
+                </div>
               </div>
             ))}
           </div>
