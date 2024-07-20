@@ -7,7 +7,6 @@ async function main() {
   const EthEcho = await ethers.getContractFactory("EthEcho");
   const ethEcho = await EthEcho.deploy();
   
-  // 新しいデプロイ待機方法
   await ethEcho.deploymentTransaction().wait();
   
   console.log("EthEcho deployed to:", await ethEcho.getAddress());
@@ -22,15 +21,18 @@ async function main() {
   await tx2.wait();
   console.log("Echo 2 written");
 
+  const tx3 = await ethEcho.connect(otherAccount).writeEcho("QmTestCID3");
+  await tx3.wait();
+  console.log("Echo 2 written");
+
   // Test getAllEchoes
   console.log("Testing getAllEchoes...");
-  const allEchoes = await ethEcho.getAllEchoes();
-  console.log("All echoes:", allEchoes);
-
-  // Test getEcho
-  console.log("Testing getEcho...");
-  const echo1 = await ethEcho.getEcho(1);
-  console.log("Echo 1:", echo1);
+  let allEchoes = await ethEcho.getAllEchoes();
+  console.log("All echoes:", allEchoes.map(echo => ({
+    echoer: echo.echoer,
+    cid: echo.cid,
+    timestamp: echo.timestamp.toString()
+  })));
 
   // Test removeEcho
   console.log("Testing removeEcho...");
@@ -40,8 +42,12 @@ async function main() {
 
   // Verify echo removal
   console.log("Verifying echo removal...");
-  const updatedAllEchoes = await ethEcho.getAllEchoes();
-  console.log("Updated all echoes:", updatedAllEchoes);
+  allEchoes = await ethEcho.getAllEchoes();
+  console.log("Updated all echoes:", allEchoes.map(echo => ({
+    echoer: echo.echoer,
+    cid: echo.cid,
+    timestamp: echo.timestamp.toString()
+  })));
 
   console.log("Test script completed");
 }
