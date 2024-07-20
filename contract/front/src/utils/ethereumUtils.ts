@@ -72,7 +72,7 @@ export const writeEchoContract = async (message: string) => {
   }
 };
 
-export const getAllEchoes = async () => {
+export const getAllEchoes = async (): Promise<ProcessedEcho[] | null> => {
   const contract = await getEthEchoContract();
   if (!contract) return null;
 
@@ -80,7 +80,7 @@ export const getAllEchoes = async () => {
     // ブロックチェーン上から全てのcidを取得する
     const echoes = await contract.getAllEchoes();
 
-    const processedEchoes = await Promise.all(echoes.map(async (echo: RawEcho, index: number) => {
+    const processedEchoes: ProcessedEcho[] = await Promise.all(echoes.map(async (echo: RawEcho, index: number) => {
       const message = await getMessageFromIPFS(echo.cid);
       return {
         id: index + 1,
@@ -112,7 +112,7 @@ export const setupEchoListener = (callback: (from: string, timestamp: number, ci
 };
 
 // IPFSから特定のCIDのメッセージを取得する関数
-export const getMessageFromIPFS = async (cid: string) => {
+export const getMessageFromIPFS = async (cid: string): Promise<string | null> => {
   try {
     const messageStream = await ipfs.cat(cid);
     let data = new Uint8Array();
