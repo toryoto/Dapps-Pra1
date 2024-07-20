@@ -9,7 +9,8 @@ contract EthEcho {
 
   // eventとは、スマートコントラクタで起こったことを外部に通知するもの
   // event イベント名(通知したい値)
-  event NewEcho(address indexed from, uint256 timestamp, string cid);
+  event NewEcho(address indexed from, uint256 indexed echoId, uint256 timestamp, string cid);
+  event DeleteEcho(uint256 indexed echoId, address indexed from);
 
   // Echoの構造体を定義する
   struct Echo {
@@ -21,10 +22,16 @@ contract EthEcho {
   // keyからvalueを参照する
   // int型のidとそのEchoデータをマッピング
   mapping(uint256 => Echo) private _echoesMap;
-  uint256[] private _echoIds;
+  mapping(uint256 => bool) private _echoExists;
+  uint256[] private _activeEchoIds;
+
+  modifier echoExists(uint256 _echoId) {
+    require(_echoExists[_echoId], "Echo does not exist");
+    _;
+  }
 
   constructor() {
-    console.log("EthEcho contract deployed with IPFS integration");
+    console.log("EthEcho contract deployed with IPFS integration and improved delete functionality");
   }
 
   function writeEcho(string memory _cid) public {
@@ -34,32 +41,43 @@ contract EthEcho {
     Echo memory newEcho = Echo(msg.sender, _cid, block.timestamp);
     // 増やしたtotalEchoの場所にnewEchoを結び付ける
     _echoesMap[_totalEchoes] = newEcho;
-    _echoIds.push(_totalEchoes);
+    _activeEchoIds.push(_totalEchoes);
+    _echoExists[_totalEchoes] = true;
 
     // 新しいcidなどを引数にイベントを発火
-    emit NewEcho(msg.sender, block.timestamp, _cid);
+    emit NewEcho(msg.sender, _totalEchoes, block.timestamp, _cid);
   }
 
-  function getLatestEcho() public view returns (Echo memory) {
-    require(_totalEchoes > 0, "No echoes yet");
-    return _echoesMap[_totalEchoes];
+  function removeEcho(uint256 _echoId) public echoExists(_echoId) {
+    require(_echoesMap[_echoId].echoer == msg.sender, "Only the sender can remove their echo");
+
+    _echoExists[_echoId] = false;
+
+    // スワップ・アンド・ポップで削除対象を_activeEchoIdsから消去
+    for (uint i = 0; i < _activeEchoIds.length; i++) {
+      if (_activeEchoIds[i] == _echoId) {
+        _activeEchoIds[i] = _activeEchoIds[_activeEchoIds.length - 1];
+        _activeEchoIds.pop();
+        break;
+      }
+    }
+
+    // 削除完了したので、イベントを発火
+    emit DeleteEcho(_echoId, msg.sender);
   }
 
-  function getTotalEchoes() public view returns (uint256) {
-    return _totalEchoes;
+  function getEcho(uint256 _echoId) public view echoExists(_echoId) returns (Echo memory) {
+    return _echoesMap[_echoId];
   }
 
   function getAllEchoes() public view returns (Echo[] memory) {
     // 空のEcho構造体配列に最新のエコーを代入する
-    Echo[] memory allEchoes = new Echo[](_totalEchoes);
-    for (uint256 i = 1; i <= _totalEchoes; i++) {
-      allEchoes[i-1] = _echoesMap[i];
+    Echo[] memory allEchoes = new Echo[](_activeEchoIds.length);
+    for (uint256 i = 1; i < _activeEchoIds.length; i++) {
+      // 削除されていないエコーのリストからidを取得
+      uint256 targetId = _activeEchoIds[i];
+      allEchoes[i] = _echoesMap[targetId];
     }
     return allEchoes;
-  }
-
-  function getEchoById(uint256 id) public view returns (Echo memory) {
-    require(id > 0 && id <= _totalEchoes, "Invalid echo ID");
-    return _echoesMap[id];
   }
 }
