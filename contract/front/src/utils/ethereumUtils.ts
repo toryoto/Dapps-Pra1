@@ -1,14 +1,15 @@
-import { ethers, isAddress } from "ethers";
+import { ethers } from "ethers";
 import abi from "../app/utils/EthEcho.json";
 import { create } from 'kubo-rpc-client';
 
-const contractAddress = "0xbCD5591FCcF04A6776A3a794DebE3D65f21EE37B";
+const contractAddress = "0x0240769C4330E02b1b34B167F96254FEe73B90C6";
 const contractABI = abi.abi;
 
 const ipfs = create({ url: 'http://localhost:5001' });
 
 // ブロックチェーンから取得する生のEchoデータ（チェーン上に保存）
 interface RawEcho {
+  id: number;
   echoer: string;
   cid: string;
   timestamp: number;
@@ -77,13 +78,21 @@ export const getAllEchoes = async (): Promise<ProcessedEcho[] | null> => {
   if (!contract) return null;
 
   try {
-    // ブロックチェーン上から全てのcidを取得する
+    // ブロックチェーン上から全てのデータを取得する（以下が送られてくるデータ構造）
+    // struct Echo {
+    //   uint256 id;
+    //   address echoer;
+    //   string cid;
+    //   uint256 timestamp;
+    // }
+
     const echoes = await contract.getAllEchoes();
 
     const processedEchoes: ProcessedEcho[] = await Promise.all(echoes.map(async (echo: RawEcho, index: number) => {
+      // IPFS上からデータを取得
       const message = await getMessageFromIPFS(echo.cid);
       return {
-        id: index + 1,
+        id: echo.id,
         address: echo.echoer,
         timestamp: new Date(Number(echo.timestamp) * 1000),
         cid: echo.cid,
@@ -98,9 +107,25 @@ export const getAllEchoes = async (): Promise<ProcessedEcho[] | null> => {
   }
 };
 
+export const removeEcho = async (echoId: number): Promise<boolean> => {
+  const contract = await getEthEchoContract();
+  if (!contract) throw new Error("Failed to get contract");
+
+  try {
+    const removeTxn = await contract.removeEcho(echoId, { gasLimit: 300000 });
+    console.log("Removing echo...", removeTxn.hash);
+    await removeTxn.wait();
+    console.log("Echo removed -- ", removeTxn.hash);
+    return true;
+  } catch (error) {
+    console.log("Failed to remove echo: ", error);
+    throw error;
+  }
+}
+
 // 関数に渡される関数→コールバック関数
 // 受け取る関数は引数を3つ取り、戻り値はvoid
-export const setupEchoListener = (callback: (from: string, timestamp: number, cid: string) => void) => {
+export const setupEchoListener = (callback: (from: string, timestamp: number, cid: string) => void): (() => void) | undefined => {
   getEthEchoContract().then(contract => {
     if (contract) {
       // スマートコントラクタからNewEchoが呼ばれるたびにcallbackを実行
@@ -109,6 +134,20 @@ export const setupEchoListener = (callback: (from: string, timestamp: number, ci
       return () => contract.off("NewEcho", callback);
     }
   });
+
+  return undefined;
+};
+
+// DeleteEchoイベントをリッスンし、Echoが削除されたときにコールバック関数を実行
+export const setupDeleteEchoListener = (callback: (echoId: number, from: string) => void): (() => void) | undefined => {
+  getEthEchoContract().then(contract => {
+    if (contract) {
+      contract.on("DeleteEcho", callback);
+      return () => contract.off("DeleteEcho", callback);
+    }
+  });
+
+  return undefined;
 };
 
 // IPFSから特定のCIDのメッセージを取得する関数
