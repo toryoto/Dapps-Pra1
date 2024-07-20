@@ -62,22 +62,26 @@ contract EthEcho {
       }
     }
 
-    // 削除完了したので、イベントを発火
     emit DeleteEcho(_echoId, msg.sender);
-  }
+}
 
   function getEcho(uint256 _echoId) public view echoExists(_echoId) returns (Echo memory) {
     return _echoesMap[_echoId];
   }
 
   function getAllEchoes() public view returns (Echo[] memory) {
-    // 空のEcho構造体配列に最新のエコーを代入する
+    // 削除されていないEchoリストの長さ分のリストを作成
     Echo[] memory allEchoes = new Echo[](_activeEchoIds.length);
-    for (uint256 i = 1; i < _activeEchoIds.length; i++) {
+
+    for (uint256 i = 0; i < _activeEchoIds.length; i++) {
       // 削除されていないエコーのリストからidを取得
       uint256 targetId = _activeEchoIds[i];
-      allEchoes[i] = _echoesMap[targetId];
+      // 削除判定のmappingがtrueならば戻り値に格納
+      if (_echoExists[targetId]) {
+        allEchoes[i] = _echoesMap[targetId];
+      }
     }
     return allEchoes;
   }
 }
+
