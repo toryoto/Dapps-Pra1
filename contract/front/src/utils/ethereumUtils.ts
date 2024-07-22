@@ -1,8 +1,11 @@
 import { ethers } from "ethers";
 import abi from "../app/utils/EthEcho.json";
 import { create } from 'kubo-rpc-client';
+import dotenv from 'dotenv';
 
-const contractAddress = "0x0240769C4330E02b1b34B167F96254FEe73B90C6";
+dotenv.config();
+
+const contractAddress = "0x30F35CbF5Ff0807e2C24AbA190b347984ed5Ea83";
 const contractABI = abi.abi;
 
 const ipfs = create({ url: 'http://localhost:5001' });
@@ -57,8 +60,18 @@ export const writeEchoContract = async (message: string) => {
   if (!contract) return null;
 
   try {
-    const ipfsResult = await ipfs.add(message);
-    const cid = ipfsResult.cid.toString();
+    const res = await fetch('/api/pinata/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message }),
+    });
+
+
+    if (!res.ok) throw new Error('Failed to upload to Pinata');
+
+    const { cid } = await res.json();
 
     // CIDをブロックチェーン上に記録
     const echoTxn = await contract.writeEcho(cid, { gasLimit: 300000 });
@@ -89,8 +102,9 @@ export const getAllEchoes = async (): Promise<ProcessedEcho[] | null> => {
     const echoes = await contract.getAllEchoes();
 
     const processedEchoes: ProcessedEcho[] = await Promise.all(echoes.map(async (echo: RawEcho, index: number) => {
-      // IPFS上からデータを取得
-      const message = await getMessageFromIPFS(echo.cid);
+      const res = await fetch(`/api/pinata/getMessage?cid=${echo.cid}`);
+      const { message } = await res.json();
+      
       return {
         id: Number(echo.id),
         address: echo.echoer,
