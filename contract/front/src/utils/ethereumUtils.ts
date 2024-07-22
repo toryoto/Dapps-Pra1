@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import abi from "../app/utils/EthEcho.json";
-import { create } from 'kubo-rpc-client';
+// import { create } from 'kubo-rpc-client';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -8,7 +8,7 @@ dotenv.config();
 const contractAddress = "0x30F35CbF5Ff0807e2C24AbA190b347984ed5Ea83";
 const contractABI = abi.abi;
 
-const ipfs = create({ url: 'http://localhost:5001' });
+// const ipfs = create({ url: 'http://localhost:5001' });
 
 // ブロックチェーンから取得する生のEchoデータ（チェーン上に保存）
 interface RawEcho {
@@ -165,21 +165,21 @@ export const setupDeleteEchoListener = (callback: (echoId: number, from: string)
 };
 
 // IPFSから特定のCIDのメッセージを取得する関数
-export const getMessageFromIPFS = async (cid: string): Promise<string | null> => {
-  try {
-    const messageStream = await ipfs.cat(cid);
-    let data = new Uint8Array();
-    for await (const chunk of messageStream) {
-      const chunkArray = new Uint8Array(chunk);
-      const newData = new Uint8Array(data.length + chunkArray.length);
-      newData.set(data);
-      newData.set(chunkArray, data.length);
-      data = newData;
-    }
-    const decoder = new TextDecoder();
-    return decoder.decode(data);
-  } catch (error) {
-    console.error("Failed to get message from IPFS: ", error);
-    return null;
-  }
-};
+// export const getMessageFromIPFS = async (cid: string): Promise<string | null> => {
+//   try {
+//     const messageStream = await ipfs.cat(cid);
+//     let data = new Uint8Array();
+//     for await (const chunk of messageStream) {
+//       const chunkArray = new Uint8Array(chunk);
+//       const newData = new Uint8Array(data.length + chunkArray.length);
+//       newData.set(data);
+//       newData.set(chunkArray, data.length);
+//       data = newData;
+//     }
+//     const decoder = new TextDecoder();
+//     return decoder.decode(data);
+//   } catch (error) {
+//     console.error("Failed to get message from IPFS: ", error);
+//     return null;
+//   }
+// };
