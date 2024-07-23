@@ -1,6 +1,7 @@
 export interface EchoDetailsProps {
   title: string;
   value: string;
+  linkTo?: string;
 }
 
 export interface ProcessedEcho {

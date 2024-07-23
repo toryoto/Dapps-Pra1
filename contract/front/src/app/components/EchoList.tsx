@@ -16,7 +16,7 @@ export const EchoList: React.FC<EchoListProps> = ({ allEchoes, currentAccount, o
       <div key={echo.id} className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 relative">
         <h3 className="text-lg font-semibold mb-4 pr-8">Echo #{echo.id}</h3>
         <div className="space-y-2">
-          <EchoDetails title="Address" value={echo.address} />
+          <EchoDetails title="Address" value={echo.address} linkTo={`/users/${echo.address}`} />
           <EchoDetails title="Date🦴🐕💨" value={echo.timestamp.toString()} />
           <EchoDetails title="CID" value={echo.cid} />
           <EchoDetails title="Message" value={echo.message || "No message"} />
