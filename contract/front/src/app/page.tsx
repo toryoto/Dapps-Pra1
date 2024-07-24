@@ -1,10 +1,18 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { connectWallet, writeEchoContract, getAllEchoes, setupEchoListener, removeEcho, setupDeleteEchoListener } from "../utils/ethereumUtils";
 import { ProcessedEcho } from "./types/type"
 import { LoadingOverlay } from "./components/LoadingOverlay";
 import { EchoList } from "./components/EchoList";
 
+// デバウンス関数
+const debounce = (func: Function, delay: number) => {
+  let timeoutId: NodeJS.Timeout;
+  return (...args: any[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+};
 
 export default function Home() {
   const [currentAccount, setCurrentAccount] = useState<string>("");
@@ -27,8 +35,8 @@ export default function Home() {
     try {
       const result = await writeEchoContract(messageValue);
       if (result) {
-        await fetchAllEchoes();
         setMessageValue("");
+        // fetchAllEchoes は削除（リスナーが処理します）
       }
     } finally {
       setIsLoading(false);
@@ -39,21 +47,26 @@ export default function Home() {
     setIsLoading(true);
     try {
       const result = await removeEcho(echoId);
-      if (result) {
-        await fetchAllEchoes();
-      } else {
+      if (!result) {
         throw new Error("Failed to remove echo");
       }
+      // fetchAllEchoes は削除（リスナーが処理します）
     } finally {
       setIsLoading(false);
     }
   }
 
-  const fetchAllEchoes = async () => {
+  const fetchAllEchoes = useCallback(async () => {
     const echoes: ProcessedEcho[] | null = await getAllEchoes();
     if (echoes) setAllEchoes(echoes?.sort((a, b) => a.id - b.id).reverse());
     console.log(echoes);
-  };
+  }, []);
+
+  // デバウンスされたfetchAllEchoes
+  const debouncedFetchAllEchoes = useCallback(
+    debounce(fetchAllEchoes, 500),  // 500ミリ秒のデバウンス
+    [fetchAllEchoes]
+  );
 
   useEffect(() => {
     if (currentAccount) {
@@ -61,18 +74,18 @@ export default function Home() {
     }
 
     const echoCleanup = setupEchoListener(async (from, timestamp, cid) => {
-      fetchAllEchoes();
+      debouncedFetchAllEchoes();
     });
 
     const deleteCleanup = setupDeleteEchoListener(async (echoId, from) => {
-      fetchAllEchoes();
+      debouncedFetchAllEchoes();
     });
 
     return () => {
       if (echoCleanup) echoCleanup();
       if (deleteCleanup) deleteCleanup();
     };
-  }, [currentAccount]);
+  }, [currentAccount, debouncedFetchAllEchoes]);
 
   return (
     <>

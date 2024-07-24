@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { User, Save, X, AlertCircle } from 'lucide-react';
 import { hasProfileOnBlockchain, updateProfileOnBlockchain } from '@/utils/profileContract';
 
@@ -17,14 +17,7 @@ export default function UserProfile({ params }: { params: { address: string } })
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  // 表示ユーザが変わるごとにユーザプロフィールを取得
-  useEffect(() => {
-    fetchProfile(params.address);
-  }, 
-  // [params.address]
-);
-
-  const getProfile = async (address: string) => {
+  const getProfile = useCallback(async (address: string) => {
     try {
       const res = await fetch(`http://localhost:3000/api/pinata/profile/${address}`);
       if (!res.ok) throw new Error('Failed to fetch profile');
@@ -39,7 +32,27 @@ export default function UserProfile({ params }: { params: { address: string } })
       console.error('Error fetching profile:', error);
       throw error;
     }
-  };
+  }, []);
+
+  const fetchProfile = useCallback(async (address: string) => {
+    try {
+      const hasProfile = await hasProfileOnBlockchain(address);
+      if (!hasProfile) {
+        console.log("プロフィールが存在しません");
+        setProfile({ name: 'No Name', bio: 'No Bio', imageHash: '' });
+        return;
+      }
+      const fetchedProfile = await getProfile(address);
+      if (fetchedProfile) setProfile(fetchedProfile);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      setMessage({ type: 'error', text: 'Failed to fetch profile' });
+    }
+  }, [getProfile]);
+
+  useEffect(() => {
+    fetchProfile(params.address);
+  }, [params.address, fetchProfile]);
 
   const updateProfile = async (address: string, data: { name: string; bio: string; imageFile?: File | null }) => {
     try {
@@ -72,22 +85,6 @@ export default function UserProfile({ params }: { params: { address: string } })
       console.error('Error updating profile:', error);
       return { success: false, message: 'Failed to update profile' };
     }
-  };
-
-  const fetchProfile = async (address: string)=> {
-    try {
-      const hasProfile = await hasProfileOnBlockchain(address);
-      if (!hasProfile) {
-        console.log("プロフィールが存在しません");
-        setProfile({ name: 'No Name', bio: 'No Bio', imageHash: '' });
-        return;
-      }
-      const fetchedProfile = await getProfile(params.address);
-      if (fetchedProfile) setProfile(fetchedProfile);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      setMessage({ type: 'error', text: 'Failed to fetch profile' });
-    };
   };
 
   const validateProfile = (data: UserProfile): boolean => {

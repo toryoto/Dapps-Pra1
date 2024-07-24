@@ -5,10 +5,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const contractAddress = "0xd50d250EB30Bc60e87221325950FAdbb39efBd03";
+const contractAddress = "0x2Bcc51F0F1e088D94c1Ca8183e2EA5FA092243Ce";
 const contractABI = abi.abi;
-
-// const ipfs = create({ url: 'http://localhost:5001' });
 
 // ブロックチェーンから取得する生のEchoデータ（チェーン上に保存）
 interface RawEcho {
@@ -163,23 +161,3 @@ export const setupDeleteEchoListener = (callback: (echoId: number, from: string)
 
   return undefined;
 };
-
-// IPFSから特定のCIDのメッセージを取得する関数
-// export const getMessageFromIPFS = async (cid: string): Promise<string | null> => {
-//   try {
-//     const messageStream = await ipfs.cat(cid);
-//     let data = new Uint8Array();
-//     for await (const chunk of messageStream) {
-//       const chunkArray = new Uint8Array(chunk);
-//       const newData = new Uint8Array(data.length + chunkArray.length);
-//       newData.set(data);
-//       newData.set(chunkArray, data.length);
-//       data = newData;
-//     }
-//     const decoder = new TextDecoder();
-//     return decoder.decode(data);
-//   } catch (error) {
-//     console.error("Failed to get message from IPFS: ", error);
-//     return null;
-//   }
-// };
