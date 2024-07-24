@@ -26,6 +26,32 @@ describe("UserProfile", function() {
     expect(lastUpdated).to.be.gt(0);
   });
 
+  it("Should execute getters correctly", async function () {
+    const name = "Ryoto";
+    const detailsCID = "QmT78zSuBmuS4z925WZfrqQ1qHaJ56DQaTfyMUF7F8ff5o";
+
+    await userProfile.connect(owner).updateProfile(name, detailsCID);
+
+    const retrievedName = await userProfile.getName(owner.address);
+    const retrievedCID = await userProfile.getDetailsCID(owner.address);
+
+    expect(retrievedName).to.equal(name);
+    expect(retrievedCID).to.equal(detailsCID);
+  });
+
+  it("Should get lastUpdated correctly", async function () {
+    const name = "Ryoto";
+    const detailsCID = "QmT78zSuBmuS4z925WZfrqQ1qHaJ56DQaTfyMUF7F8ff5o";
+
+    const tx = await userProfile.connect(owner).updateProfile(name, detailsCID);
+    const receipt = await tx.wait();
+    const block = await ethers.provider.getBlock(receipt.blockNumber);
+
+    const [, , lastUpdated] = await userProfile.getProfile(owner.address);
+
+    expect(lastUpdated).to.equal(block.timestamp);
+  });
+
   it("Should return empty profile for non-existent user", async function () {
     const zeroAddress = "0x0000000000000000000000000000000000000000";
     const [name, detailsCID, lastUpdated] = await userProfile.getProfile(zeroAddress);

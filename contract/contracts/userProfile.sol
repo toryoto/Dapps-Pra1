@@ -28,4 +28,16 @@ contract UserProfile {
     Profile memory user_profile = profiles[_user];
     return (user_profile.name, user_profile.detailsCID, user_profile.lastUpdated);
   }
+
+  function getName(address _user) public view returns (string memory) {
+    return profiles[_user].name;
+  }
+
+  function getDetailsCID(address _user) public view returns (string memory) {
+    return profiles[_user].detailsCID;
+  }
+
+  function hasProfile(address _user) public view returns (bool) {
+    return bytes(profiles[_user].name).length > 0;
+  }
 }
