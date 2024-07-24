@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { User, Save, X, AlertCircle } from 'lucide-react';
-import { updateProfileOnBlockchain } from '@/utils/profileContract';
+import { hasProfileOnBlockchain, updateProfileOnBlockchain } from '@/utils/profileContract';
 
 interface UserProfile {
   name: string;
@@ -19,12 +19,14 @@ export default function UserProfile({ params }: { params: { address: string } })
 
   // 表示ユーザが変わるごとにユーザプロフィールを取得
   useEffect(() => {
-    fetchProfile();
-  }, [params.address]);
+    fetchProfile(params.address);
+  }, 
+  // [params.address]
+);
 
   const getProfile = async (address: string) => {
     try {
-      const res = await fetch(`api/pinata/profile/${address}`);
+      const res = await fetch(`http://localhost:3000/api/pinata/profile/${address}`);
       if (!res.ok) throw new Error('Failed to fetch profile');
 
       const data = await res.json();
@@ -45,13 +47,12 @@ export default function UserProfile({ params }: { params: { address: string } })
       formData.append('address', address);
       formData.append('name', data.name);
       formData.append('bio', data.bio);
-      if (data.imageFile) {
-        formData.append('image', data.imageFile);
-      }
+      if (data.imageFile) formData.append('image', data.imageFile);
 
       // POSTメソッドでは以下の処理が行われる
       // 1. imageをIPFSに保存後、保存先アドレスをbioと一緒にIPFSに保存してそのアドレスを返す
-      const res = await fetch('/api/pinata/profile/update', {
+      console.log(111);
+      const res = await fetch('http://localhost:3000/api/pinata/profile/update', {
         method: 'POST',
         body: formData,
       });
@@ -61,7 +62,7 @@ export default function UserProfile({ params }: { params: { address: string } })
       }
 
       const result = await res.json();
-      
+
       // nameとbio,imageのIPFS上保存先アドレスをブロックチェーン上に保存
       const success = await updateProfileOnBlockchain(data.name, result.detailsCID);
 
@@ -73,8 +74,14 @@ export default function UserProfile({ params }: { params: { address: string } })
     }
   };
 
-  const fetchProfile = async ()=> {
+  const fetchProfile = async (address: string)=> {
     try {
+      const hasProfile = await hasProfileOnBlockchain(address);
+      if (!hasProfile) {
+        console.log("プロフィールが存在しません");
+        setProfile({ name: 'No Name', bio: 'No Bio', imageHash: '' });
+        return;
+      }
       const fetchedProfile = await getProfile(params.address);
       if (fetchedProfile) setProfile(fetchedProfile);
     } catch (error) {
@@ -104,7 +111,7 @@ export default function UserProfile({ params }: { params: { address: string } })
       if (result.success) {
         setIsEditing(false);
         setMessage({ type: 'success', text: 'Profile updated successfully' });
-        fetchProfile(); // Refresh profile data
+        fetchProfile(params.address); // Refresh profile data
       } else setMessage({ type: 'error', text: result.message });
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -139,12 +146,47 @@ export default function UserProfile({ params }: { params: { address: string } })
                 type="text"
                 value={profile.name}
                 onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition-all duration-300 ease-in-out"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition-all duration-300 ease-in-out text-gray-900 dark:text-white bg-white dark:bg-gray-700"
               />
               {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
             </div>
           ) : (
             <p className="mt-1 text-sm text-gray-900 dark:text-gray-100">{profile.name}</p>
+          )}
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Bio</label>
+          {isEditing ? (
+            <div>
+              <textarea
+                value={profile.bio}
+                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition-all duration-300 ease-in-out text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+              />
+              {errors.bio && <p className="mt-1 text-sm text-red-600">{errors.bio}</p>}
+            </div>
+          ) : (
+            <p className="mt-1 text-sm text-gray-900 dark:text-gray-100">{profile.bio}</p>
+          )}
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Profile Image</label>
+          {profile.imageHash ? (
+            <img src={`https://gateway.pinata.cloud/ipfs/${profile.imageHash}`} alt="Profile" className="mt-1 w-32 h-32 object-cover rounded-full" />
+          ) : (
+            <div className="mt-1 w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center">
+              <User className="h-16 w-16 text-gray-400" />
+            </div>
+          )}
+          {isEditing && (
+            <div className="mt-2">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+            </div>
           )}
         </div>
       </div>
@@ -163,6 +205,7 @@ export default function UserProfile({ params }: { params: { address: string } })
                 setIsEditing(false);
                 setErrors({});
                 setMessage(null);
+                fetchProfile(params.address); // Reset to original data
               }}
               className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition-all duration-300 ease-in-out"
             >
