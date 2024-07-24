@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const contractAddress = "0x30F35CbF5Ff0807e2C24AbA190b347984ed5Ea83";
+const contractAddress = "0xd50d250EB30Bc60e87221325950FAdbb39efBd03";
 const contractABI = abi.abi;
 
 // const ipfs = create({ url: 'http://localhost:5001' });
