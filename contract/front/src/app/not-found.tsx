@@ -13,7 +13,7 @@ export default function NotFound() {
           404 - Page Not Found
         </h1>
         <p className="text-center text-gray-600 dark:text-gray-400 mb-6">
-          Oops! The page you're looking for doesn't exist or has been moved.
+          Oops! The page you are looking for does not exist or has been moved.
         </p>
         <div className="flex justify-center">
           <Link

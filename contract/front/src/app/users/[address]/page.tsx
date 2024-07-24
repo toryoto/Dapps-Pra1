@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { User, Save, X, AlertCircle } from 'lucide-react';
 import { hasProfileOnBlockchain, updateProfileOnBlockchain } from '@/utils/profileContract';
+import Image from 'next/image';
 
 interface UserProfile {
   name: string;
@@ -169,7 +170,13 @@ export default function UserProfile({ params }: { params: { address: string } })
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Profile Image</label>
           {profile.imageHash ? (
-            <img src={`https://gateway.pinata.cloud/ipfs/${profile.imageHash}`} alt="Profile" className="mt-1 w-32 h-32 object-cover rounded-full" />
+            <Image
+            src={`https://gateway.pinata.cloud/ipfs/${profile.imageHash}`}
+            alt="Profile"
+            width={128}
+            height={128}
+            className="mt-1 object-cover rounded-full"
+          />
           ) : (
             <div className="mt-1 w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center">
               <User className="h-16 w-16 text-gray-400" />
