@@ -1,8 +1,6 @@
 // プロフィールの値を受け取り、Pinataに保存、ブロックチェーン上に保存する処理を行う
-
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadProfileDetailsToPinata, uploadProfileImageToPinata } from '../../pinataUtils';
-import { updateProfileOnBlockchain } from '@/utils/profileContract';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,8 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     // imageをPinataに保存してCIDを取得する処理
-    let imageCID = '';
-    // todo: 画像の変更がなければ処理しない
+    let imageCID = formData.get('currentImageCID') as string || '';
     if (imageFile) imageCID = await uploadProfileImageToPinata(imageFile, address);
 
     const profileDetails = {
@@ -30,8 +27,7 @@ export async function POST(request: NextRequest) {
 
     const detailsCID = await uploadProfileDetailsToPinata(profileDetails, address);
 
-    return NextResponse.json({ message: 'Profile updated successfullt', detailsCID: detailsCID });
-
+    return NextResponse.json({ message: 'Profile updated successfully', detailsCID });
   } catch (error) {
     console.error('Error in profile update API:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
