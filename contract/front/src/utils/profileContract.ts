@@ -77,21 +77,38 @@ export async function getProfileFromBlockchain(address: string): Promise<Process
   }
 }
 
-// export async function* watchProfileUpdates() {
-//   const contract = await getProfileContract();
-//   const filter = contract.filters.ProfileUpdated();
-  
-//   while (true) {
-//     const events = await contract.queryFilter(filter);
-//     for (const event of events) {
-//       const [address, name, detailsCID, timestamp] = event.args;
-//       yield {
-//         address,
-//         name,
-//         detailsCID,
-//         timestamp: new Date(Number(timestamp) * 1000)
-//       };
-//     }
-//     await new Promise(resolve => setTimeout(resolve, 5000)); // 5秒ごとにポーリング
-//   }
-// }
+export async function getNameFromBlockChain(address: string): Promise<string | null> {
+  try {
+    const contract = await getProfileContract();
+    if (!contract) return null;
+
+    return await contract.getName(address);
+  } catch (error) {
+    console.error("Failed to get name:", error);
+    return null;
+  }
+}
+
+export async function getDetailsCIDFromBlockchain(address: string): Promise<string | null> {
+  try {
+    const contract = await getProfileContract();
+    if (!contract) return null;
+
+    return await contract.getDetailsCID(address);
+  } catch (error) {
+    console.error("Failed to get detailsCID:", error);
+    return null;
+  }
+}
+
+export async function hasProfileOnBlockchain(address: string): Promise<boolean> {
+  try {
+    const contract = await getProfileContract();
+    if (!contract) return false;
+
+    return await contract.hasProfile(address);
+  } catch (error) {
+    console.error("Failed to check if profile exists:", error);
+    return false;
+  }
+}
