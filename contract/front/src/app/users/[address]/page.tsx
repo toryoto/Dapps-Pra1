@@ -60,7 +60,6 @@ export default function UserProfile({ params }: { params: { address: string } })
     try {
       const formData = new FormData();
       formData.append('address', address);
-      formData.append('name', data.name);
       formData.append('bio', data.bio);
       if (data.imageFile) formData.append('image', data.imageFile);
 
@@ -72,11 +71,12 @@ export default function UserProfile({ params }: { params: { address: string } })
       if (!res.ok) throw new Error('Failed to update profile');
 
       const result = await res.json();
+      // ブロックチェーン上にはnameとdetailsCID(bio, imageHash)のみを保存
       const success = await updateProfileOnBlockchain(data.name, result.detailsCID);
 
       if (success) {
         setMessage('Profile updated successfully');
-        fetchProfile(address);
+        await fetchProfile(address);
       } else {
         setMessage('Failed to update profile on blockchain');
       }
@@ -93,6 +93,7 @@ export default function UserProfile({ params }: { params: { address: string } })
       imageFile: imageFile
     });
     setIsEditing(false);
+    setImageFile(null);
   };
 
   return (
