@@ -60,19 +60,24 @@ export default function UserProfile({ params }: { params: { address: string } })
     try {
       const formData = new FormData();
       formData.append('address', address);
-      formData.append('bio', data.bio);
+      if (data.bio !== undefined) formData.append('bio', data.bio);
       if (data.imageFile) formData.append('image', data.imageFile);
 
-      const res = await fetch('http://localhost:3000/api/pinata/profile/update', {
-        method: 'POST',
-        body: formData,
-      });
+      let detailsCID = null;
 
-      if (!res.ok) throw new Error('Failed to update profile');
+      if (data.bio !== undefined || data.imageFile) {
+        const res = await fetch('http://localhost:3000/api/pinata/profile/update', {
+          method: 'POST',
+          body: formData,
+        });
 
-      const result = await res.json();
+        if (!res.ok) throw new Error('Failed to update profile');
+        const result = await res.json();
+        detailsCID = result.detailsCID;
+      }
+
       // ブロックチェーン上にはnameとdetailsCID(bio, imageHash)のみを保存
-      const success = await updateProfileOnBlockchain(data.name, result.detailsCID);
+      const success = await updateProfileOnBlockchain(data.name, detailsCID);
 
       if (success) {
         setMessage('Profile updated successfully');
