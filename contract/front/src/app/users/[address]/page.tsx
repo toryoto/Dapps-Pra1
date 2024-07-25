@@ -8,24 +8,29 @@ import Image from 'next/image';
 interface UserProfile {
   name: string;
   bio: string;
-  imageHash: string;
+  imageHash?: string;
 }
 
 export default function UserProfile({ params }: { params: { address: string } }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState<UserProfile>({ name: 'No Name', bio: 'No Bio', imageHash: '' });
+  const [profile, setProfile] = useState<UserProfile>({ name: 'No Name', bio: 'No Bio' });
   const [message, setMessage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const getProfile = useCallback(async (address: string) => {
+  const getProfile = useCallback(async (address: string): Promise<UserProfile | null> => {
     try {
       const res = await fetch(`http://localhost:3000/api/pinata/profile/${address}`);
-      if (!res.ok) throw new Error('Failed to fetch profile');
+      if (!res.ok) {
+        if (res.status === 404) {
+          return null;
+        }
+        throw new Error('Failed to fetch profile');
+      }
       const data = await res.json();
       return {
-        name: data.name || 'No Name',
-        bio: data.bio || 'No Bio',
-        imageHash: data.imageHash || '' 
+        name: data.name,
+        bio: data.bio,
+        imageHash: data.imageHash
       };
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -36,11 +41,15 @@ export default function UserProfile({ params }: { params: { address: string } })
   const fetchProfile = useCallback(async (address: string) => {
     const hasProfile = await hasProfileOnBlockchain(address);
     if (!hasProfile) {
-      setProfile({ name: 'No Name', bio: 'No Bio', imageHash: '' });
+      setProfile({ name: 'No Name', bio: 'No Bio' });
       return;
     }
     const fetchedProfile = await getProfile(address);
-    if (fetchedProfile) setProfile(fetchedProfile);
+    if (fetchedProfile) {
+      setProfile(fetchedProfile);
+    } else {
+      setProfile({ name: 'No Name', bio: 'No Bio' });
+    }
   }, [getProfile]);
 
   useEffect(() => {
