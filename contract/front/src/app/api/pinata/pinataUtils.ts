@@ -1,8 +1,22 @@
 import { ProfileDetails } from '@/app/types/type';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 const pinataApiKey = process.env.PINATA_API_KEY;
 const pinataSecretApiKey = process.env.PINATA_SECRET_API_KEY;
+
+function handlePinataError(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const axiosError = error as AxiosError;
+    if (axiosError.response) {
+      return `Pinata Error1: ${axiosError.response.status} - ${axiosError.response.statusText}`;
+    } else if (axiosError.request) {
+      return 'Pinata Error2: No response received';
+    } else {
+      return `Pinata Error3: ${axiosError.message}`;
+    }
+  }
+  return 'Unknown error occurred while accessing Pinata';
+}
 
 export async function uploadToPinata(message: string) {
   const url = `https://api.pinata.cloud/pinning/pinJSONToIPFS`;
@@ -22,7 +36,7 @@ export async function uploadToPinata(message: string) {
     // データ取得先のCIDを返す
     return res.data.IpfsHash
   } catch (error) {
-    console.error('Error uploading to Pinata:', error);
+    console.error(handlePinataError(error));
     throw error;
   }
 }
@@ -35,7 +49,7 @@ export async function getMessageFromPinata(cid: string) {
     
     return res.data.message
   } catch (error) {
-    console.error('Error fetching message from Pinata', error);
+    console.error(handlePinataError(error));
     return null;
   }
 }
@@ -62,7 +76,7 @@ export async function uploadProfileDetailsToPinata(details: ProfileDetails, addr
     
     return res.data.IpfsHash;
   } catch (error) {
-    console.error('Error uploading profile details to Pinata:', error);
+    console.error(handlePinataError(error));
     throw error;
   }
 }
@@ -91,8 +105,7 @@ export async function uploadProfileImageToPinata(imageFile: File, address: strin
     
     return res.data.IpfsHash;
   } catch (error) {
-    console.error('Error uploading profile image to Pinata:', error);
-    throw error;
+    console.error(handlePinataError(error));
   }
 }
 
@@ -110,7 +123,7 @@ export async function getProfileDetailsFromPinata(cid: string): Promise<ProfileD
 
     return profileDetails;
   } catch (error) {
-    console.error('Error fetching profile details from Pinata:', error);
+    console.error(handlePinataError(error));
     return null;
   }
 }
