@@ -1,9 +1,15 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { User } from 'lucide-react';
-import { hasProfileOnBlockchain, updateProfileOnBlockchain } from '@/utils/profileContract';
 import Image from 'next/image';
+import {
+  getProfileFromBlockchain,
+  updateProfileOnBlockchain,
+  hasProfileOnBlockchain,
+  connectWallet
+} from '@/utils/profileContract';
+import { getProfileDetailsFromPinata, uploadProfileDetailsToPinata, uploadProfileImageToPinata } from '../../api/pinata/pinataUtils'
 
 interface UserProfile {
   name: string;
@@ -17,71 +23,63 @@ export default function UserProfile({ params }: { params: { address: string } })
   const [message, setMessage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const getProfile = useCallback(async (address: string): Promise<UserProfile | null> => {
+  async function fetchProfile(address: string) {
     try {
-      const res = await fetch(`http://localhost:3000/api/pinata/profile/${address}`);
-      if (!res.ok) {
-        if (res.status === 404) {
-          return null;
-        }
-        throw new Error('Failed to fetch profile');
+      // ユーザがプロフィールを登録していなければ、初期値を設定
+      const hasProfile = await hasProfileOnBlockchain(address);
+      if (!hasProfile) {
+        setProfile({ name: 'No Name111111', bio: 'No Bio111111' });
+        return;
       }
-      const data = await res.json();
-      return {
-        name: data.name,
-        bio: data.bio,
-        imageHash: data.imageHash
-      };
+
+      // {name, detailsCID}が返される
+      const blockchainProfile = await getProfileFromBlockchain(address);
+      if (!blockchainProfile) {
+        setMessage('Failed to fetch profile from blockchain');
+        return;
+      }
+
+      // Pinataから{bio, imageHash}を取得
+      const profileDetails = await getProfileDetailsFromPinata(blockchainProfile.detailsCID);
+      setProfile({
+        name: blockchainProfile.name,
+        bio: profileDetails?.bio || 'No Bio',
+        imageHash: profileDetails?.imageHash
+      });
     } catch (error) {
       console.error('Error fetching profile:', error);
-      return null;
+      setMessage('Failed to fetch profile');
     }
-  }, []);
-
-  const fetchProfile = useCallback(async (address: string) => {
-    const hasProfile = await hasProfileOnBlockchain(address);
-    if (!hasProfile) {
-      setProfile({ name: 'No Name', bio: 'No Bio' });
-      return;
-    }
-    const fetchedProfile = await getProfile(address);
-    if (fetchedProfile) {
-      setProfile(fetchedProfile);
-    } else {
-      setProfile({ name: 'No Name', bio: 'No Bio' });
-    }
-  }, [getProfile]);
+  }
 
   useEffect(() => {
     fetchProfile(params.address);
-  }, [params.address, fetchProfile]);
+  }, [params.address]);
 
-  const updateProfile = async (address: string, data: { name: string; bio: string; imageFile?: File | null }) => {
+  async function handleUpdateProfile() {
     try {
-      const formData = new FormData();
-      formData.append('address', address);
-      if (data.bio !== undefined) formData.append('bio', data.bio);
-      if (data.imageFile) formData.append('image', data.imageFile);
-
-      let detailsCID = null;
-
-      if (data.bio !== undefined || data.imageFile) {
-        const res = await fetch('http://localhost:3000/api/pinata/profile/update', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!res.ok) throw new Error('Failed to update profile');
-        const result = await res.json();
-        detailsCID = result.detailsCID;
+      const account = await connectWallet();
+      if (!account) {
+        setMessage('Please connect your wallet');
+        return;
       }
 
-      // ブロックチェーン上にはnameとdetailsCID(bio, imageHash)のみを保存
-      const success = await updateProfileOnBlockchain(data.name, detailsCID);
+      let imageHash = profile.imageHash;
+      if (imageFile) {
+        imageHash = await uploadProfileImageToPinata(imageFile, params.address);
+      }
+
+      const profileDetails = {
+        bio: profile.bio,
+        imageHash: imageHash
+      };
+
+      const detailsCID = await uploadProfileDetailsToPinata(profileDetails, params.address);
+      const success = await updateProfileOnBlockchain(profile.name, detailsCID);
 
       if (success) {
         setMessage('Profile updated successfully');
-        await fetchProfile(address);
+        await fetchProfile(params.address);
       } else {
         setMessage('Failed to update profile on blockchain');
       }
@@ -89,17 +87,9 @@ export default function UserProfile({ params }: { params: { address: string } })
       console.error('Error updating profile:', error);
       setMessage('Failed to update profile');
     }
-  };
-
-  const handleSave = async () => {
-    await updateProfile(params.address, {
-      name: profile.name,
-      bio: profile.bio,
-      imageFile: imageFile
-    });
     setIsEditing(false);
     setImageFile(null);
-  };
+  }
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 relative">
@@ -164,7 +154,7 @@ export default function UserProfile({ params }: { params: { address: string } })
         {isEditing ? (
           <>
             <button
-              onClick={handleSave}
+              onClick={handleUpdateProfile}
               className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 mr-2"
             >
               Save
