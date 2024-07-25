@@ -1,5 +1,6 @@
 // プロフィールの値を受け取り、Pinataに保存、ブロックチェーン上に保存する処理を行う
 import { NextRequest, NextResponse } from 'next/server';
+import { ProfileDetails } from '@/app/types/type';
 import { uploadProfileDetailsToPinata, uploadProfileImageToPinata } from '../../pinataUtils';
 
 export async function POST(request: NextRequest) {
@@ -22,10 +23,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'No profile details to update', detailsCID: null });
     }
 
-    const profileDetails = {
-      ...(bio !== null && { bio }),
-      ...(imageCID && { imageHash: imageCID })
-    };
+    const profileDetails: ProfileDetails = {};
+    if (bio) profileDetails.bio = bio;
+    if (imageFile) profileDetails.imageHash = await uploadProfileImageToPinata(imageFile, address);
 
     const detailsCID = await uploadProfileDetailsToPinata(profileDetails, address);
 

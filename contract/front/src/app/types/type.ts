@@ -11,3 +11,8 @@ export interface ProcessedEcho {
   cid: string;
   message: string | null;
 }
+
+export interface ProfileDetails {
+  bio?: string;
+  imageHash?: string;
+}

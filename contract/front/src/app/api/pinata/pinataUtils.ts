@@ -1,12 +1,8 @@
+import { ProfileDetails } from '@/app/types/type';
 import axios from 'axios';
 
 const pinataApiKey = process.env.PINATA_API_KEY;
 const pinataSecretApiKey = process.env.PINATA_SECRET_API_KEY;
-
-interface ProfileDetails {
-  bio: string;
-  imageHash?: string;
-}
 
 export async function uploadToPinata(message: string) {
   const url = `https://api.pinata.cloud/pinning/pinJSONToIPFS`;
@@ -105,7 +101,14 @@ export async function getProfileDetailsFromPinata(cid: string): Promise<ProfileD
 
   try {
     const res = await axios.get(url);
-    return res.data as ProfileDetails;
+    const data = res.data;
+
+    const profileDetails: ProfileDetails = {};
+
+    if (data.bio !== undefined) profileDetails.bio = data.bio;
+    if (data.imageHash !== undefined) profileDetails.imageHash = data.imageHash
+
+    return profileDetails;
   } catch (error) {
     console.error('Error fetching profile details from Pinata:', error);
     return null;
