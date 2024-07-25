@@ -7,22 +7,24 @@ export async function POST(request: NextRequest) {
     // リクエストにはユーザプロフィールの要素が含まれる
     const formData = await request.formData();
     const address = formData.get('address') as string;
-    const name = formData.get('name') as string;
-    const bio = formData.get('bio') as string;
+    const bio = formData.get('bio') as string | null;
     const imageFile = formData.get('image') as File | null;
 
-    // リクエストに値が含まれていなければエラー
-    if (!address || !name || !bio) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!address) {
+      return NextResponse.json({ error: 'Missing required field: address' }, { status: 400 });
     }
 
-    // imageをPinataに保存してCIDを取得する処理
-    let imageCID = formData.get('currentImageCID') as string || '';
+    let imageCID = '';
     if (imageFile) imageCID = await uploadProfileImageToPinata(imageFile, address);
 
+    // bioとimageHashが空ならIPFS保存をスキップ
+    if (!address && !bio) {
+      return NextResponse.json({ message: 'No profile details to update', detailsCID: null });
+    }
+
     const profileDetails = {
-      bio,
-      imageCID
+      ...(bio !== null && { bio }),
+      ...(imageCID && { imageHash: imageCID })
     };
 
     const detailsCID = await uploadProfileDetailsToPinata(profileDetails, address);
