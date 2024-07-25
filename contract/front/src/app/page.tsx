@@ -1,18 +1,9 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
-import { connectWallet, writeEchoContract, getAllEchoes, setupEchoListener, removeEcho, setupDeleteEchoListener } from "../utils/ethereumUtils";
+import React, { useEffect, useState } from "react";
+import { connectWallet, writeEchoContract, getAllEchoes, removeEcho } from "../utils/ethereumUtils";
 import { ProcessedEcho } from "./types/type"
 import { LoadingOverlay } from "./components/LoadingOverlay";
 import { EchoList } from "./components/EchoList";
-
-// デバウンス関数
-const debounce = (func: Function, delay: number) => {
-  let timeoutId: NodeJS.Timeout;
-  return (...args: any[]) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func(...args), delay);
-  };
-};
 
 export default function Home() {
   const [currentAccount, setCurrentAccount] = useState<string>("");
@@ -20,11 +11,19 @@ export default function Home() {
   const [allEchoes, setAllEchoes] = useState<ProcessedEcho[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  const fetchAllEchoes = async () => {
+    const echoes: ProcessedEcho[] | null = await getAllEchoes();
+    if (echoes) setAllEchoes(echoes.sort((a, b) => b.id - a.id));
+  };
+
   const handleConnectWallet = async () => {
     setIsLoading(true);
     try {
       const account = await connectWallet();
-      if (account) setCurrentAccount(account);
+      if (account) {
+        setCurrentAccount(account);
+        await fetchAllEchoes();
+      }
     } finally {
       setIsLoading(false);
     }
@@ -36,7 +35,7 @@ export default function Home() {
       const result = await writeEchoContract(messageValue);
       if (result) {
         setMessageValue("");
-        // fetchAllEchoes は削除（リスナーが処理します）
+        await fetchAllEchoes();
       }
     } finally {
       setIsLoading(false);
@@ -47,49 +46,19 @@ export default function Home() {
     setIsLoading(true);
     try {
       const result = await removeEcho(echoId);
-      if (!result) {
+      if (result) {
+        await fetchAllEchoes();
+      } else {
         throw new Error("Failed to remove echo");
       }
-      // fetchAllEchoes は削除（リスナーが処理します）
     } finally {
       setIsLoading(false);
     }
   }
 
-  const fetchAllEchoes = useCallback(async () => {
-    const echoes: ProcessedEcho[] | null = await getAllEchoes();
-    if (echoes) setAllEchoes(echoes?.sort((a, b) => a.id - b.id).reverse());
-    console.log(echoes);
-  }, []);
-
-  // デバウンスされたfetchAllEchoes
-  const debouncedFetchAllEchoes = useCallback(
-    debounce(fetchAllEchoes, 500),  // 500ミリ秒のデバウンス
-    [fetchAllEchoes]
-  );
-
-  useEffect(() => {
-    if (currentAccount) {
-      fetchAllEchoes();
-    }
-
-    const echoCleanup = setupEchoListener(async (from, timestamp, cid) => {
-      debouncedFetchAllEchoes();
-    });
-
-    const deleteCleanup = setupDeleteEchoListener(async (echoId, from) => {
-      debouncedFetchAllEchoes();
-    });
-
-    return () => {
-      if (echoCleanup) echoCleanup();
-      if (deleteCleanup) deleteCleanup();
-    };
-  }, [currentAccount, debouncedFetchAllEchoes]);
-
   return (
     <>
-      {isLoading && <LoadingOverlay /> }
+      {isLoading && <LoadingOverlay />}
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <h1 className="text-4xl font-bold text-center mb-8 text-gray-900 dark:text-white">EthEcho🏔️</h1>
         <p className="text-center mb-8 text-gray-600 dark:text-gray-300">
