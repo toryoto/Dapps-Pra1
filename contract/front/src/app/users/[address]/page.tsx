@@ -19,7 +19,8 @@ interface UserProfile {
 
 export default function UserProfile({ params }: { params: { address: string } }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState<UserProfile>({ name: 'No Name', bio: 'No Bio' });
+  const [profile, setProfile] = useState<UserProfile>({ name: '', bio: '', imageHash: '' });
+  const [originalProfile, setOriginalProfile] = useState<UserProfile>({ name: '', bio: '', imageHash: '' });
   const [message, setMessage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -28,7 +29,7 @@ export default function UserProfile({ params }: { params: { address: string } })
       // ユーザがプロフィールを登録していなければ、初期値を設定
       const hasProfile = await hasProfileOnBlockchain(address);
       if (!hasProfile) {
-        setProfile({ name: 'No Name111111', bio: 'No Bio111111' });
+        setProfile({ name: 'No Name', bio: 'No Bio', imageHash: '' });
         return;
       }
 
@@ -41,11 +42,14 @@ export default function UserProfile({ params }: { params: { address: string } })
 
       // Pinataから{bio, imageHash}を取得
       const profileDetails = await getProfileDetailsFromPinata(blockchainProfile.detailsCID);
-      setProfile({
+      const updatedProfile = {
         name: blockchainProfile.name,
         bio: profileDetails?.bio || 'No Bio',
         imageHash: profileDetails?.imageHash
-      });
+      };
+      setProfile(updatedProfile)
+      setOriginalProfile(updatedProfile);
+      setMessage(null);
     } catch (error) {
       console.error('Error fetching profile:', error);
       setMessage('Failed to fetch profile');
@@ -57,31 +61,53 @@ export default function UserProfile({ params }: { params: { address: string } })
   }, [params.address]);
 
   async function handleUpdateProfile() {
+    const account = await connectWallet();
+    if (!account) {
+      setMessage('Please connect your wallet');
+      return;
+    }
+
     try {
-      const account = await connectWallet();
-      if (!account) {
-        setMessage('Please connect your wallet');
-        return;
+      console.log(profile, originalProfile);
+      let needPinataUpdate = false;
+      const formData = new FormData();
+      formData.append('address', params.address);
+
+      if (profile.bio !== originalProfile.bio) {
+        formData.append('bio', profile.bio);
+        needPinataUpdate = true;
       }
 
-      let imageHash = profile.imageHash;
       if (imageFile) {
-        imageHash = await uploadProfileImageToPinata(imageFile, params.address);
+        formData.append('image', imageFile);
+        needPinataUpdate = true;
       }
 
-      const profileDetails = {
-        bio: profile.bio,
-        imageHash: imageHash
-      };
+      // サーバーサイドでbioとimageをPinataに保存
+      let detailsCID = null;
+      if (needPinataUpdate) {
+        const res = await fetch('/api/pinata/profile/update', {
+          method: 'POST',
+          body: formData,
+        });
 
-      const detailsCID = await uploadProfileDetailsToPinata(profileDetails, params.address);
-      const success = await updateProfileOnBlockchain(profile.name, detailsCID);
+        if (!res.ok) throw new Error('Failed to upload to Pinata');
 
-      if (success) {
-        setMessage('Profile updated successfully');
-        await fetchProfile(params.address);
+        const data = await res.json();
+        detailsCID = data.detailsCID;
+      }
+      
+      // nameが変更されている場合、またはdetailsCIDが新しく生成された場合のみブロックチェーンを更新
+      if (profile.name !== originalProfile.name || detailsCID !== null) {
+        const success = await updateProfileOnBlockchain(profile.name, detailsCID);
+        if (success) {
+          setMessage('Profile updated successfully');
+          await fetchProfile(params.address);  // プロフィールを再取得して状態を更新
+        } else {
+          setMessage('Failed to update profile on blockchain');
+        }
       } else {
-        setMessage('Failed to update profile on blockchain');
+        setMessage('No changes to update');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -104,11 +130,14 @@ export default function UserProfile({ params }: { params: { address: string } })
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
           {isEditing ? (
             <input
-              type="text"
-              value={profile.name}
-              onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-            />
+            type="text"
+            value={profile.name}
+            onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 
+                       shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 
+                       focus:ring-opacity-50 bg-white dark:bg-gray-700 
+                       text-gray-900 dark:text-gray-100"
+          />
           ) : (
             <p className="mt-1 text-sm text-gray-900 dark:text-gray-100">{profile.name}</p>
           )}
@@ -117,10 +146,13 @@ export default function UserProfile({ params }: { params: { address: string } })
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Bio</label>
           {isEditing ? (
             <textarea
-              value={profile.bio}
-              onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-            />
+            value={profile.bio}
+            onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 
+                       shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 
+                       focus:ring-opacity-50 bg-white dark:bg-gray-700 
+                       text-gray-900 dark:text-gray-100"
+          />
           ) : (
             <p className="mt-1 text-sm text-gray-900 dark:text-gray-100">{profile.bio}</p>
           )}
