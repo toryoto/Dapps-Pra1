@@ -5,9 +5,9 @@ const contractAddress = "0x1962Dd439B8F9Ace134F92E0d96684727Fb1890F";
 const contractABI = abi.abi;
 
 interface RawProfile {
-  name: string;
-  detailsCID: string;
-  lastUpdated: bigint;
+  0: string;  // name
+  1: string;  // detailsCID
+  2: bigint;  // lastUpdated
 }
 
 interface ProcessedProfile {
@@ -66,10 +66,11 @@ export async function getProfileFromBlockchain(address: string): Promise<Process
     if (!contract) return null;
 
     const profile: RawProfile = await contract.getProfile(address);
+    
     return {
-      name: profile.name,
-      detailsCID: profile.detailsCID,
-      lastUpdated: new Date(Number(profile.lastUpdated) * 1000)
+      name: profile[0],
+      detailsCID: profile[1],
+      lastUpdated: new Date(Number(profile[2]) * 1000)
     };
   } catch (error) {
     console.error("Failed to get profile:", error);
