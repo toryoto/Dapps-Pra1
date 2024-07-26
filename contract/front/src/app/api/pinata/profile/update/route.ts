@@ -11,23 +11,22 @@ export async function POST(request: NextRequest) {
     const bio = formData.get('bio') as string | null;
     const imageFile = formData.get('image') as File | null;
 
-    if (!address) {
-      return NextResponse.json({ error: 'Missing required field: address' }, { status: 400 });
-    }
+    if (!address) return NextResponse.json({ error: 'Missing required field: address' }, { status: 400 });
 
+    // 画像をPinataに保存し、CIDを返す
     let imageCID = '';
     if (imageFile) imageCID = await uploadProfileImageToPinata(imageFile, address);
 
-    // bioとimageHashが空ならIPFS保存をスキップ
-    if (!address && !bio) {
-      return NextResponse.json({ message: 'No profile details to update', detailsCID: null });
+    const profileDetails: ProfileDetails = {
+      bio: bio || '',
+    };
+    if (imageCID) profileDetails.imageHash = imageCID;
+
+    // bioかimageHashが存在すれば新たにPinataに保存
+    let detailsCID = null;
+    if (profileDetails.bio || profileDetails.imageHash) {
+      detailsCID = await uploadProfileDetailsToPinata(profileDetails, address);
     }
-
-    const profileDetails: ProfileDetails = {};
-    if (bio) profileDetails.bio = bio;
-    if (imageFile) profileDetails.imageHash = await uploadProfileImageToPinata(imageFile, address);
-
-    const detailsCID = await uploadProfileDetailsToPinata(profileDetails, address);
 
     return NextResponse.json({ message: 'Profile updated successfully', detailsCID });
   } catch (error) {
