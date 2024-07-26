@@ -10,6 +10,7 @@ import {
   connectWallet
 } from '@/utils/profileContract';
 import { getProfileDetailsFromPinata } from '@/app/api/pinata/pinataUtils';
+import { LoadingOverlay } from '@/app/components/LoadingOverlay';
 
 interface UserProfile {
   name: string;
@@ -23,8 +24,10 @@ export default function UserProfile({ params }: { params: { address: string } })
   const [originalProfile, setOriginalProfile] = useState<UserProfile>({ name: '', bio: '', imageHash: '' });
   const [message, setMessage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   async function fetchProfile(address: string) {
+    setIsLoading(true);
     try {
       const hasProfile = await hasProfileOnBlockchain(address);
       if (!hasProfile) {
@@ -32,14 +35,16 @@ export default function UserProfile({ params }: { params: { address: string } })
         return;
       }
 
+      // ブロックチェーン上からdetailsCIDを取得
       const blockchainProfile = await getProfileFromBlockchain(address);
       if (!blockchainProfile) {
         throw new Error('Failed to fetch profile from blockchain');
       }
 
+      // detailsCIDをもとにして、Pinataからプロフィールの値を取得
       const profileDetails = await getProfileDetailsFromPinata(blockchainProfile.detailsCID);
       const updatedProfile = {
-        name: blockchainProfile.name,
+        name: profileDetails?.name || 'No name',
         bio: profileDetails?.bio || 'No Bio',
         imageHash: profileDetails?.imageHash
       };
@@ -49,6 +54,8 @@ export default function UserProfile({ params }: { params: { address: string } })
     } catch (error) {
       console.error('Error fetching profile:', error);
       setMessage('Failed to fetch profile');
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -57,6 +64,8 @@ export default function UserProfile({ params }: { params: { address: string } })
   }, [params.address]);
 
   async function handleUpdateProfile() {
+    setIsLoading(true);
+
     const account = await connectWallet();
     if (!account) {
       setMessage('Please connect your wallet');
@@ -64,27 +73,26 @@ export default function UserProfile({ params }: { params: { address: string } })
     }
 
     try {
-      let needPinataUpdate = profile.bio !== originalProfile.bio || imageFile !== null;
       const formData = new FormData();
       formData.append('address', params.address);
-      if (profile.bio !== originalProfile.bio) formData.append('bio', profile.bio);
-      if (imageFile) formData.append('image', imageFile);
+      formData.append('name', profile.name);
+      formData.append('bio', profile.bio);
+      if (imageFile) formData.append('imageFile', imageFile)
+      else if (profile.imageHash) formData.append('imageHash', profile.imageHash)
+    
+      const res = await fetch('/api/pinata/profile/update', {
+        method: 'POST',
+        body: formData,
+      });
 
-      let detailsCID = null;
-      if (needPinataUpdate) {
-        const res = await fetch('/api/pinata/profile/update', {
-          method: 'POST',
-          body: formData,
-        });
+      if (!res.ok) throw new Error('Failed to upload to Pinata');
 
-        if (!res.ok) throw new Error('Failed to upload to Pinata');
+      const data = await res.json();
+      const detailsCID = data.detailsCID;
 
-        const data = await res.json();
-        detailsCID = data.detailsCID;
-      }
       
-      if (profile.name !== originalProfile.name || detailsCID !== null) {
-        const success = await updateProfileOnBlockchain(profile.name, detailsCID);
+      if (detailsCID) {
+        const success = await updateProfileOnBlockchain(detailsCID);
         if (success) {
           setMessage('Profile updated successfully');
           await fetchProfile(params.address);
@@ -100,11 +108,13 @@ export default function UserProfile({ params }: { params: { address: string } })
     } finally {
       setIsEditing(false);
       setImageFile(null);
+      setIsLoading(false);
     }
   }
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-3xl p-8 max-w-3xl mx-auto transition-all duration-300 ease-in-out">
+      {isLoading && <LoadingOverlay />}
       <div className="flex flex-col items-center mb-8">
         <div className="relative mb-4">
           {profile.imageHash ? (

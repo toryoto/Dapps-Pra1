@@ -8,23 +8,29 @@ export async function POST(request: NextRequest) {
     // リクエストにはユーザプロフィールの要素が含まれる
     const formData = await request.formData();
     const address = formData.get('address') as string;
+    const name = formData.get('name') as string | null;
     const bio = formData.get('bio') as string | null;
-    const imageFile = formData.get('image') as File | null;
+    const imageFile = formData.get('imageFile') as File | null;
+    const imageHash = formData.get('imageHash') as string | null;
 
     if (!address) return NextResponse.json({ error: 'Missing required field: address' }, { status: 400 });
 
+    const profileDetails: ProfileDetails = {};
+    if (name && typeof name === 'string') profileDetails.name = name;
+    if (bio && typeof bio === 'string') profileDetails.bio = bio;
+
     // 画像をPinataに保存し、CIDを返す
-    let imageCID = '';
-    if (imageFile) imageCID = await uploadProfileImageToPinata(imageFile, address);
+    if (imageFile) {
+      const imageCID = await uploadProfileImageToPinata(imageFile, address);
+      profileDetails.imageHash = imageCID
+    } else if (imageHash) {
+      // 既存のイメージから変更がない場合
+      profileDetails.imageHash = imageHash
+    }
 
-    const profileDetails: ProfileDetails = {
-      bio: bio || '',
-    };
-    if (imageCID) profileDetails.imageHash = imageCID;
-
-    // bioかimageHashが存在すれば新たにPinataに保存
     let detailsCID = null;
-    if (profileDetails.bio || profileDetails.imageHash) {
+    // 1つでも更新するものがあればPinataに保存
+    if (Object.keys(profileDetails).length > 0) {
       detailsCID = await uploadProfileDetailsToPinata(profileDetails, address);
     }
 

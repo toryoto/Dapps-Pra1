@@ -55,7 +55,7 @@ export async function getMessageFromPinata(cid: string) {
 }
 
 
-// bioとimageのCIDを含むオブジェクトをPinataに保存する
+// name, bioとimageのCIDを含むオブジェクトをPinataに保存する処理
 export async function uploadProfileDetailsToPinata(details: ProfileDetails, address: string) {
   const url = `https://api.pinata.cloud/pinning/pinJSONToIPFS`;
   const data = JSON.stringify({
@@ -118,6 +118,7 @@ export async function getProfileDetailsFromPinata(cid: string): Promise<ProfileD
 
     const profileDetails: ProfileDetails = {};
 
+    if (data.name !== undefined) profileDetails.name = data.name;
     if (data.bio !== undefined) profileDetails.bio = data.bio;
     if (data.imageHash !== undefined) profileDetails.imageHash = data.imageHash
 
