@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import abi from "../app/utils/UserProfile.json";
 
-const contractAddress = "0x1962Dd439B8F9Ace134F92E0d96684727Fb1890F";
+const contractAddress = "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853";
 const contractABI = abi.abi;
 
 interface RawProfile {
