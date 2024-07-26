@@ -1,7 +1,8 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { connectWallet, writeEchoContract, getAllEchoes, removeEcho } from "../utils/ethereumUtils";
-import { ProcessedEcho } from "./types/type"
+import { ProcessedEcho } from "./types/type";
 import { LoadingOverlay } from "./components/LoadingOverlay";
 import { EchoList } from "./components/EchoList";
 
@@ -15,6 +16,10 @@ export default function Home() {
     const echoes: ProcessedEcho[] | null = await getAllEchoes();
     if (echoes) setAllEchoes(echoes.sort((a, b) => b.id - a.id));
   };
+
+  useEffect(() => {
+    fetchAllEchoes();
+  }, []);
 
   const handleConnectWallet = async () => {
     setIsLoading(true);
@@ -30,6 +35,7 @@ export default function Home() {
   };
 
   const handleWriteEcho = async () => {
+    if (!currentAccount) return;
     setIsLoading(true);
     try {
       const result = await writeEchoContract(messageValue);
@@ -43,6 +49,7 @@ export default function Home() {
   };
 
   const handleDeleteEcho = async (echoId: number) => {
+    if (!currentAccount) return;
     setIsLoading(true);
     try {
       const result = await removeEcho(echoId);
@@ -57,60 +64,77 @@ export default function Home() {
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       {isLoading && <LoadingOverlay />}
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <h1 className="text-4xl font-bold text-center mb-8 text-gray-900 dark:text-white">EthEcho🏔️</h1>
-        <p className="text-center mb-8 text-gray-600 dark:text-gray-300">
-          イーサリアムウォレットを接続して、メッセージをブロックチェーン上に保存。
-        </p>
+      <div className="container mx-auto py-12">
+        <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-3xl p-8 max-w-3xl mx-auto transition-all duration-300 ease-in-out">
+          <header className="text-center mb-12">
+            <h1 className="text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
+              EthEcho🏔️
+            </h1>
+            <p className="text-xl text-gray-600 dark:text-gray-300">
+              イーサリアムウォレットを接続して、メッセージをブロックチェーン上に保存。
+            </p>
+          </header>
 
-        <div className="space-y-6">
-          {currentAccount && (
-            <textarea
-              placeholder="メッセージはこちら"
-              value={messageValue}
-              onChange={(e) => setMessageValue(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-          )}
-
-          <div className="flex space-x-4">
-            {!currentAccount ? (
-              <button
-                onClick={handleConnectWallet}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-              >
-                Connect Wallet
-              </button>
-            ) : (
-              <>
+          <main className="space-y-8">
+            <div className="flex justify-center">
+              {!currentAccount ? (
+                <button
+                  onClick={handleConnectWallet}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-lg"
+                >
+                  Connect Wallet
+                </button>
+              ) : (
                 <button
                   disabled
-                  className="w-1/2 bg-gray-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed"
+                  className="bg-gray-400 text-white font-bold py-3 px-8 rounded-full opacity-75 cursor-not-allowed transition-all duration-300 ease-in-out shadow-lg"
                 >
                   Wallet Connected
                 </button>
+              )}
+            </div>
+
+            {currentAccount && (
+              <div className="relative">
+                <textarea
+                  placeholder="メッセージはこちら"
+                  value={messageValue}
+                  onChange={(e) => setMessageValue(e.target.value)}
+                  className="w-full p-4 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none h-32 transition-all duration-300 ease-in-out dark:bg-gray-700 dark:border-gray-600 dark:text-white shadow-inner"
+                />
+                <span className="absolute bottom-2 right-2 text-gray-400 text-sm">
+                  {messageValue.length}/140
+                </span>
+              </div>
+            )}
+
+            {currentAccount && (
+              <div className="flex justify-end">
                 <button
                   onClick={handleWriteEcho}
                   disabled={!messageValue}
-                  className="w-1/2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                 >
                   Write Echo
                 </button>
-              </>
+              </div>
             )}
-          </div>
 
-          {currentAccount && allEchoes.length > 0 && (
-            <EchoList 
-              allEchoes={allEchoes}
-              currentAccount={currentAccount}
-              onDeleteEcho={handleDeleteEcho}
-            />
-          )}
+            <div className="mt-12">
+              <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-6">
+                Recent Echoes
+              </h2>
+              <EchoList 
+                allEchoes={allEchoes}
+                currentAccount={currentAccount}
+                onDeleteEcho={handleDeleteEcho}
+              />
+            </div>
+          </main>
         </div>
       </div>
-    </>
+    </div>
   );
 }
