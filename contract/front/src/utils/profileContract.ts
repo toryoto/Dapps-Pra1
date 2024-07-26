@@ -5,13 +5,11 @@ const contractAddress = "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853";
 const contractABI = abi.abi;
 
 interface RawProfile {
-  0: string;  // name
-  1: string;  // detailsCID
-  2: bigint;  // lastUpdated
+  0: string;  // detailsCID(name, bio, imageCID)
+  1: bigint;  // lastUpdated
 }
 
 interface ProcessedProfile {
-  name: string;
   detailsCID: string;
   lastUpdated: Date;
 }
@@ -43,13 +41,14 @@ export const getProfileContract = async () => {
   return new ethers.Contract(contractAddress, contractABI, signer);
 };
 
-// nameとCID（bio,imageのCID保存先）をスマートコントラクタに送信してオンチェーン保存する処理
-export async function updateProfileOnBlockchain(name: string, detailsCID: string): Promise<boolean> {
+// detailsCIDをスマートコントラクタに送信してオンチェーン保存する処理
+export async function updateProfileOnBlockchain(detailsCID: string): Promise<boolean> {
   try {
     const contract = await getProfileContract();
     if (!contract) return false;
+
     // スマートコントラクタに値を送信する処理
-    const updateTxn = await contract.updateProfile(name, detailsCID, { gasLimit: 300000 });
+    const updateTxn = await contract.updateProfile(detailsCID, { gasLimit: 300000 });
     console.log("Updating profile...", updateTxn.hash);
     await updateTxn.wait();
     console.log("Profile updated -- ", updateTxn.hash);
@@ -68,36 +67,11 @@ export async function getProfileFromBlockchain(address: string): Promise<Process
     const profile: RawProfile = await contract.getProfile(address);
     
     return {
-      name: profile[0],
-      detailsCID: profile[1],
-      lastUpdated: new Date(Number(profile[2]) * 1000)
+      detailsCID: profile[0],
+      lastUpdated: new Date(Number(profile[1]) * 1000)
     };
   } catch (error) {
     console.error("Failed to get profile:", error);
-    return null;
-  }
-}
-
-export async function getNameFromBlockChain(address: string): Promise<string | null> {
-  try {
-    const contract = await getProfileContract();
-    if (!contract) return null;
-
-    return await contract.getName(address);
-  } catch (error) {
-    console.error("Failed to get name:", error);
-    return null;
-  }
-}
-
-export async function getDetailsCIDFromBlockchain(address: string): Promise<string | null> {
-  try {
-    const contract = await getProfileContract();
-    if (!contract) return null;
-
-    return await contract.getDetailsCID(address);
-  } catch (error) {
-    console.error("Failed to get detailsCID:", error);
     return null;
   }
 }
