@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { User } from 'lucide-react';
 import Image from 'next/image';
+import { User, Edit2, Save, X } from 'lucide-react';
 import {
   getProfileFromBlockchain,
   updateProfileOnBlockchain,
   hasProfileOnBlockchain,
   connectWallet
 } from '@/utils/profileContract';
-import { getProfileDetailsFromPinata, uploadProfileDetailsToPinata, uploadProfileImageToPinata } from '../../api/pinata/pinataUtils'
+import { getProfileDetailsFromPinata } from '@/app/api/pinata/pinataUtils';
 
 interface UserProfile {
   name: string;
@@ -26,28 +26,24 @@ export default function UserProfile({ params }: { params: { address: string } })
 
   async function fetchProfile(address: string) {
     try {
-      // ユーザがプロフィールを登録していなければ、初期値を設定
       const hasProfile = await hasProfileOnBlockchain(address);
       if (!hasProfile) {
         setProfile({ name: 'No Name', bio: 'No Bio', imageHash: '' });
         return;
       }
 
-      // {name, detailsCID}が返される
       const blockchainProfile = await getProfileFromBlockchain(address);
       if (!blockchainProfile) {
-        setMessage('Failed to fetch profile from blockchain');
-        return;
+        throw new Error('Failed to fetch profile from blockchain');
       }
 
-      // Pinataから{bio, imageHash}を取得
       const profileDetails = await getProfileDetailsFromPinata(blockchainProfile.detailsCID);
       const updatedProfile = {
         name: blockchainProfile.name,
         bio: profileDetails?.bio || 'No Bio',
         imageHash: profileDetails?.imageHash
       };
-      setProfile(updatedProfile)
+      setProfile(updatedProfile);
       setOriginalProfile(updatedProfile);
       setMessage(null);
     } catch (error) {
@@ -68,22 +64,12 @@ export default function UserProfile({ params }: { params: { address: string } })
     }
 
     try {
-      console.log(profile, originalProfile);
-      let needPinataUpdate = false;
+      let needPinataUpdate = profile.bio !== originalProfile.bio || imageFile !== null;
       const formData = new FormData();
       formData.append('address', params.address);
+      if (profile.bio !== originalProfile.bio) formData.append('bio', profile.bio);
+      if (imageFile) formData.append('image', imageFile);
 
-      if (profile.bio !== originalProfile.bio) {
-        formData.append('bio', profile.bio);
-        needPinataUpdate = true;
-      }
-
-      if (imageFile) {
-        formData.append('image', imageFile);
-        needPinataUpdate = true;
-      }
-
-      // サーバーサイドでbioとimageをPinataに保存
       let detailsCID = null;
       if (needPinataUpdate) {
         const res = await fetch('/api/pinata/profile/update', {
@@ -97,14 +83,13 @@ export default function UserProfile({ params }: { params: { address: string } })
         detailsCID = data.detailsCID;
       }
       
-      // nameが変更されている場合、またはdetailsCIDが新しく生成された場合のみブロックチェーンを更新
       if (profile.name !== originalProfile.name || detailsCID !== null) {
         const success = await updateProfileOnBlockchain(profile.name, detailsCID);
         if (success) {
           setMessage('Profile updated successfully');
-          await fetchProfile(params.address);  // プロフィールを再取得して状態を更新
+          await fetchProfile(params.address);
         } else {
-          setMessage('Failed to update profile on blockchain');
+          throw new Error('Failed to update profile on blockchain');
         }
       } else {
         setMessage('No changes to update');
@@ -112,84 +97,88 @@ export default function UserProfile({ params }: { params: { address: string } })
     } catch (error) {
       console.error('Error updating profile:', error);
       setMessage('Failed to update profile');
+    } finally {
+      setIsEditing(false);
+      setImageFile(null);
     }
-    setIsEditing(false);
-    setImageFile(null);
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 relative">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">User Profile</h1>
-      {message && <p className="mb-4 p-2 bg-blue-100 text-blue-700 border-blue-400 border rounded">{message}</p>}
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Address</label>
-          <p className="mt-1 text-sm text-gray-900 dark:text-gray-100">{params.address}</p>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-          {isEditing ? (
-            <input
-            type="text"
-            value={profile.name}
-            onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 
-                       shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 
-                       focus:ring-opacity-50 bg-white dark:bg-gray-700 
-                       text-gray-900 dark:text-gray-100"
-          />
-          ) : (
-            <p className="mt-1 text-sm text-gray-900 dark:text-gray-100">{profile.name}</p>
-          )}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Bio</label>
-          {isEditing ? (
-            <textarea
-            value={profile.bio}
-            onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 
-                       shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 
-                       focus:ring-opacity-50 bg-white dark:bg-gray-700 
-                       text-gray-900 dark:text-gray-100"
-          />
-          ) : (
-            <p className="mt-1 text-sm text-gray-900 dark:text-gray-100">{profile.bio}</p>
-          )}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Profile Image</label>
+    <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-3xl p-8 max-w-3xl mx-auto transition-all duration-300 ease-in-out">
+      <div className="flex flex-col items-center mb-8">
+        <div className="relative mb-4">
           {profile.imageHash ? (
             <Image
               src={`https://gateway.pinata.cloud/ipfs/${profile.imageHash}`}
               alt="Profile"
-              width={128}
-              height={128}
-              className="mt-1 object-cover rounded-full"
+              width={150}
+              height={150}
+              className="rounded-full object-cover transition-all duration-300 ease-in-out hover:scale-105 shadow-lg"
             />
           ) : (
-            <div className="mt-1 w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center">
-              <User className="h-16 w-16 text-gray-400" />
+            <div className="w-40 h-40 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center transition-all duration-300 ease-in-out hover:scale-105 shadow-lg">
+              <User className="h-20 w-20 text-white" />
             </div>
           )}
           {isEditing && (
+            <label htmlFor="profile-image-upload" className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-2 cursor-pointer hover:bg-blue-600 transition-colors duration-200">
+              <Edit2 className="h-5 w-5 text-white" />
+              <input
+                id="profile-image-upload"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                className="hidden"
+              />
+            </label>
+          )}
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 transition-colors duration-300">{profile.name}</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">{params.address}</p>
+      </div>
+
+      {message && (
+        <div className="mb-6 p-4 bg-blue-100 text-blue-700 border-blue-400 border rounded-md transition-all duration-300 ease-in-out animate-fade-in">
+          {message}
+        </div>
+      )}
+
+      <div className="space-y-6">
+        <div className="transition-all duration-300 ease-in-out">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Name</label>
+          {isEditing ? (
             <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-              className="mt-2 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              type="text"
+              value={profile.name}
+              onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+              className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:text-white transition-all duration-300 ease-in-out focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
+          ) : (
+            <p className="text-gray-900 dark:text-gray-100 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">{profile.name}</p>
+          )}
+        </div>
+        <div className="transition-all duration-300 ease-in-out">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Bio</label>
+          {isEditing ? (
+            <textarea
+              value={profile.bio}
+              onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+              className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:text-white transition-all duration-300 ease-in-out focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32 resize-none"
+            />
+          ) : (
+            <p className="text-gray-900 dark:text-gray-100 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg min-h-[8rem]">{profile.bio}</p>
           )}
         </div>
       </div>
-      <div className="mt-6 flex justify-end">
+
+      <div className="mt-8 flex justify-end space-x-4">
         {isEditing ? (
           <>
             <button
               onClick={handleUpdateProfile}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 mr-2"
+              className="px-6 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-all duration-300 ease-in-out transform hover:scale-105 flex items-center"
             >
-              Save
+              <Save className="mr-2 h-5 w-5" /> Save
             </button>
             <button
               onClick={() => {
@@ -197,17 +186,17 @@ export default function UserProfile({ params }: { params: { address: string } })
                 setMessage(null);
                 fetchProfile(params.address);
               }}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+              className="px-6 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition-all duration-300 ease-in-out transform hover:scale-105 flex items-center"
             >
-              Cancel
+              <X className="mr-2 h-5 w-5" /> Cancel
             </button>
           </>
         ) : (
           <button
             onClick={() => setIsEditing(true)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+            className="px-6 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-300 ease-in-out transform hover:scale-105 flex items-center"
           >
-            Edit Profile
+            <Edit2 className="mr-2 h-5 w-5" /> Edit Profile
           </button>
         )}
       </div>
