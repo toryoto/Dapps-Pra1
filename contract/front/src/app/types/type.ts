@@ -13,6 +13,7 @@ export interface ProcessedEcho {
 }
 
 export interface ProfileDetails {
+  name?: string;
   bio?: string;
   imageHash?: string;
 }
