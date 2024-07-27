@@ -32,7 +32,20 @@ export const connectWallet = async (): Promise<string | null> => {
   }
 };
 
-export const getProfileContract = async () => {
+// 読み取り専用のコントラクト
+const getReadOnlyContract = async () => {
+  const provider = new ethers.JsonRpcProvider("https://eth-sepolia.g.alchemy.com/v2/0f3pgdhbIActNECtmQus8qUy6Gl6HbwT");
+    
+  // コントラクトのインスタンス化
+  return new ethers.Contract(
+    contractAddress,
+    contractABI,
+    provider
+  );
+}
+
+// 書き込み可能なコントラクト
+const getSignerontract = async () => {
   const ethereum = getEthereumObject();
   if (!ethereum) return null;
 
@@ -44,7 +57,7 @@ export const getProfileContract = async () => {
 // detailsCIDをスマートコントラクタに送信してオンチェーン保存する処理
 export async function updateProfileOnBlockchain(detailsCID: string): Promise<boolean> {
   try {
-    const contract = await getProfileContract();
+    const contract = await getSignerontract();
     if (!contract) return false;
 
     // スマートコントラクタに値を送信する処理
@@ -61,7 +74,7 @@ export async function updateProfileOnBlockchain(detailsCID: string): Promise<boo
 
 export async function getProfileFromBlockchain(address: string): Promise<ProcessedProfile | null> {
   try {
-    const contract = await getProfileContract();
+    const contract = await getReadOnlyContract();
     if (!contract) return null;
 
     const profile: RawProfile = await contract.getProfile(address);
@@ -78,7 +91,7 @@ export async function getProfileFromBlockchain(address: string): Promise<Process
 
 export async function hasProfileOnBlockchain(address: string): Promise<boolean> {
   try {
-    const contract = await getProfileContract();
+    const contract = await getReadOnlyContract();
     if (!contract) return false;
 
     return await contract.hasProfile(address);
