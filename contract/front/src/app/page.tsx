@@ -68,19 +68,19 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <motion.header 
-            className="text-center mb-12"
+            className="text-center mb-8 sm:mb-12"
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-teal-400 mb-6">
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-teal-400 mb-4 sm:mb-6">
               EthEcho🏔️
             </h1>
             <motion.p 
-              className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
+              className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.5 }}
@@ -92,7 +92,7 @@ export default function Home() {
           </motion.header>
 
           <motion.main 
-            className="space-y-8"
+            className="space-y-6 sm:space-y-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7, duration: 0.5 }}
@@ -109,7 +109,7 @@ export default function Home() {
                   currentAccount
                     ? "bg-gray-400 opacity-75 cursor-not-allowed"
                     : "bg-blue-500 hover:bg-blue-600"
-                } text-white font-bold py-3 px-8 rounded-full transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-lg`}
+                } text-white font-bold py-2 sm:py-3 px-6 sm:px-8 rounded-full transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-lg text-sm sm:text-base`}
               >
                 {currentAccount ? "Wallet Connected" : "Connect Wallet"}
               </button>
@@ -127,10 +127,10 @@ export default function Home() {
                     placeholder="メッセージはこちら"
                     value={messageValue}
                     onChange={(e) => setMessageValue(e.target.value)}
-                    className="w-full p-4 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none h-32 transition-all duration-300 ease-in-out dark:bg-gray-700 dark:border-gray-600 dark:text-white shadow-inner"
+                    className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none h-24 sm:h-32 transition-all duration-300 ease-in-out dark:bg-gray-700 dark:border-gray-600 dark:text-white shadow-inner text-sm sm:text-base"
                     maxLength={140}
                   />
-                  <span className="absolute bottom-2 right-2 text-gray-400 text-sm">
+                  <span className="absolute bottom-2 right-2 text-gray-400 text-xs sm:text-sm">
                     {messageValue.length}/140
                   </span>
                 </div>
@@ -142,7 +142,7 @@ export default function Home() {
                   <button
                     onClick={handleWriteEcho}
                     disabled={!messageValue}
-                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 sm:py-3 px-6 sm:px-8 rounded-full transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-sm sm:text-base"
                   >
                     Write Echo
                   </button>
@@ -151,7 +151,7 @@ export default function Home() {
             )}
 
             <motion.div 
-              className="mt-12"
+              className="mt-8 sm:mt-12"
               initial={{ opacity: 0 }}
               animate={{ opacity: showEchoList ? 1 : 0 }}
               transition={{ duration: 0.5 }}
@@ -172,7 +172,7 @@ export default function Home() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-24 w-24 sm:h-32 sm:w-32 border-t-2 border-b-2 border-blue-500"></div>
         </motion.div>
       )}
     </div>
