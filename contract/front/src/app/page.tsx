@@ -4,12 +4,14 @@ import React, { useEffect, useState } from "react";
 import { connectWallet, writeEchoContract, getAllEchoes, removeEcho } from "../utils/ethereumUtils";
 import { ProcessedEcho } from "./types/type";
 import { EchoList } from "./components/EchoList";
+import { motion } from "framer-motion";
 
 export default function Home() {
   const [currentAccount, setCurrentAccount] = useState<string>("");
   const [messageValue, setMessageValue] = useState<string>("");
   const [allEchoes, setAllEchoes] = useState<ProcessedEcho[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showEchoList, setShowEchoList] = useState(false);
 
   const fetchAllEchoes = async () => {
     const echoes: ProcessedEcho[] | null = await getAllEchoes();
@@ -18,6 +20,8 @@ export default function Home() {
 
   useEffect(() => {
     fetchAllEchoes();
+    const timer = setTimeout(() => setShowEchoList(true), 500);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleConnectWallet = async () => {
@@ -26,7 +30,7 @@ export default function Home() {
       const account = await connectWallet();
       if (account) {
         setCurrentAccount(account);
-        await fetchAllEchoes();
+        //await fetchAllEchoes();
       }
     } finally {
       setIsLoading(false);
@@ -66,17 +70,38 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          <header className="text-center mb-12">
-            <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-teal-400 mb-4">
+          <motion.header 
+            className="text-center mb-12"
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-teal-400 mb-6">
               EthEcho🏔️
             </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
-              イーサリアムウォレットを接続して、メッセージをブロックチェーン上に保存。
-            </p>
-          </header>
+            <motion.p 
+              className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+            >
+              <span className="font-semibold text-blue-600 dark:text-blue-400">永遠に残る声を、ブロックチェーンに。</span>
+              <br />
+              <span className="text-sm mt-2 block opacity-75">あなたのメッセージが、イーサリアムの歴史の一部となる。</span>
+            </motion.p>
+          </motion.header>
 
-          <main className="space-y-8">
-            <div className="flex justify-center">
+          <motion.main 
+            className="space-y-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7, duration: 0.5 }}
+          >
+            <motion.div 
+              className="flex justify-center"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
               <button
                 onClick={handleConnectWallet}
                 disabled={!!currentAccount}
@@ -88,10 +113,15 @@ export default function Home() {
               >
                 {currentAccount ? "Wallet Connected" : "Connect Wallet"}
               </button>
-            </div>
+            </motion.div>
 
             {currentAccount && (
-              <div className="space-y-4">
+              <motion.div 
+                className="space-y-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+              >
                 <div className="relative">
                   <textarea
                     placeholder="メッセージはこちら"
@@ -104,7 +134,11 @@ export default function Home() {
                     {messageValue.length}/140
                   </span>
                 </div>
-                <div className="flex justify-end">
+                <motion.div 
+                  className="flex justify-end"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
                   <button
                     onClick={handleWriteEcho}
                     disabled={!messageValue}
@@ -112,24 +146,34 @@ export default function Home() {
                   >
                     Write Echo
                   </button>
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             )}
 
-            <div className="mt-12">
+            <motion.div 
+              className="mt-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: showEchoList ? 1 : 0 }}
+              transition={{ duration: 0.5 }}
+            >
               <EchoList 
                 allEchoes={allEchoes}
                 currentAccount={currentAccount}
                 onDeleteEcho={handleDeleteEcho}
               />
-            </div>
-          </main>
+            </motion.div>
+          </motion.main>
         </div>
       </div>
       {isLoading && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <motion.div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
           <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
+        </motion.div>
       )}
     </div>
   );
