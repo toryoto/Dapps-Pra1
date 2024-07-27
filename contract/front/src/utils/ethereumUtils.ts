@@ -36,8 +36,7 @@ const getEthEchoContract = async () => {
 
 // 読み取り専用のコントラクト
 const getReadOnlyContract = async () => {
-  const provider = new ethers.JsonRpcProvider("https://eth-sepolia.g.alchemy.com/v2/0f3pgdhbIActNECtmQus8qUy6Gl6HbwT");
-    
+  const provider = new ethers.JsonRpcProvider("https://rpc.sepolia.org");
   // コントラクトのインスタンス化
   return new ethers.Contract(
     contractAddress,
