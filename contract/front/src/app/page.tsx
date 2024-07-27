@@ -14,8 +14,10 @@ export default function Home() {
   const [showEchoList, setShowEchoList] = useState(false);
 
   const fetchAllEchoes = async () => {
+    setIsLoading(true);
     const echoes: ProcessedEcho[] | null = await getAllEchoes();
     if (echoes) setAllEchoes(echoes.sort((a, b) => b.id - a.id));
+    setIsLoading(false);
   };
 
   useEffect(() => {
