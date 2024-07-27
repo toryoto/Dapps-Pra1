@@ -58,7 +58,6 @@ export default function UserProfile({ params }: { params: { address: string } })
   }
 
   useEffect(() => {
-    setIsLoading(true);
     // 自分のウォレットアドレスを
     const checkWalletConnection = async() => {
       const account = await connectWallet()
@@ -68,7 +67,6 @@ export default function UserProfile({ params }: { params: { address: string } })
     checkWalletConnection();
 
     fetchProfile(params.address);
-    setIsLoading(false);
   }, [params.address]);
 
   // ウォレットに接続済みかつ自分のアカウントのみ編集できる

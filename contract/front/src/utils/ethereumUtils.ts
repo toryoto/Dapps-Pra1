@@ -1,29 +1,10 @@
 import { ethers } from "ethers";
 import abi from "../app/utils/EthEcho.json";
-// import { create } from 'kubo-rpc-client';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { ProcessedEcho, RawEcho } from "@/app/types/type";
 
 const contractAddress = "0x3Cd556A69C4908Cd1034d29c10D6250E712F1EB3";
 const contractABI = abi.abi;
 
-// ブロックチェーンから取得する生のEchoデータ（チェーン上に保存）
-interface RawEcho {
-  id: number;
-  echoer: string;
-  cid: string;
-  timestamp: number;
-}
-
-// IPFSからメッセージを取得し、加工後のEchoデータ
-interface ProcessedEcho {
-  id: number;
-  address: string;
-  timestamp: Date;
-  cid: string;
-  message: string | null;
-}
 export const getEthereumObject = () => (window as any).ethereum;
 
 export const connectWallet = async (): Promise<string | null> => {
@@ -44,7 +25,7 @@ export const connectWallet = async (): Promise<string | null> => {
   }
 };
 
-export const getEthEchoContract = async () => {
+const getEthEchoContract = async () => {
   const ethereum = getEthereumObject();
   if (!ethereum) return null;
 
@@ -52,6 +33,18 @@ export const getEthEchoContract = async () => {
   const signer = await provider.getSigner();
   return new ethers.Contract(contractAddress, contractABI, signer);
 };
+
+// 読み取り専用のコントラクト
+const getReadOnlyContract = async () => {
+  const provider = new ethers.JsonRpcProvider("https://eth-sepolia.g.alchemy.com/v2/0f3pgdhbIActNECtmQus8qUy6Gl6HbwT");
+    
+  // コントラクトのインスタンス化
+  return new ethers.Contract(
+    contractAddress,
+    contractABI,
+    provider
+  );
+}
 
 export const writeEchoContract = async (message: string) => {
   const contract = await getEthEchoContract();
@@ -85,7 +78,7 @@ export const writeEchoContract = async (message: string) => {
 };
 
 export const getAllEchoes = async (): Promise<ProcessedEcho[] | null> => {
-  const contract = await getEthEchoContract();
+  const contract = await getReadOnlyContract();
   if (!contract) return null;
 
   try {
@@ -134,30 +127,3 @@ export const removeEcho = async (echoId: number): Promise<boolean> => {
     throw error;
   }
 }
-
-// 関数に渡される関数→コールバック関数
-// 受け取る関数は引数を3つ取り、戻り値はvoid
-export const setupEchoListener = (callback: (from: string, timestamp: number, cid: string) => void): (() => void) | undefined => {
-  getEthEchoContract().then(contract => {
-    if (contract) {
-      // スマートコントラクタからNewEchoが呼ばれるたびにcallbackを実行
-      contract.on("NewEcho", callback);
-      // イベントリスナーを解除する
-      return () => contract.off("NewEcho", callback);
-    }
-  });
-
-  return undefined;
-};
-
-// DeleteEchoイベントをリッスンし、Echoが削除されたときにコールバック関数を実行
-export const setupDeleteEchoListener = (callback: (echoId: number, from: string) => void): (() => void) | undefined => {
-  getEthEchoContract().then(contract => {
-    if (contract) {
-      contract.on("DeleteEcho", callback);
-      return () => contract.off("DeleteEcho", callback);
-    }
-  });
-
-  return undefined;
-};
