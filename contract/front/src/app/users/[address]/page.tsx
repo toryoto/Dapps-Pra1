@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { User, Edit2, Save, X } from 'lucide-react';
+import Link from "next/link";
+import { User, Edit2, Save, X, ArrowLeft  } from 'lucide-react';
 import {
   getProfileFromBlockchain,
   updateProfileOnBlockchain,
@@ -11,7 +12,6 @@ import {
 } from '@/utils/profileContract';
 import { getProfileDetailsFromPinata } from '@/app/api/pinata/pinataUtils';
 import { LoadingOverlay } from '@/app/components/LoadingOverlay';
-
 interface UserProfile {
   name: string;
   bio: string;
@@ -115,6 +115,10 @@ export default function UserProfile({ params }: { params: { address: string } })
   return (
     <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-3xl p-8 max-w-3xl mx-auto transition-all duration-300 ease-in-out">
       {isLoading && <LoadingOverlay />}
+      <Link href="/" className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:underline mb-6 transition-all duration-300 ease-in-out">
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Home
+      </Link>
       <div className="flex flex-col items-center mb-8">
         <div className="relative mb-4">
           {profile.imageHash ? (
