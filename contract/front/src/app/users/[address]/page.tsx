@@ -60,7 +60,9 @@ export default function UserProfile({ params }: { params: { address: string } })
   }
 
   useEffect(() => {
+    setIsLoading(true);
     fetchProfile(params.address);
+    setIsLoading(false);
   }, [params.address]);
 
   async function handleUpdateProfile() {
@@ -114,7 +116,6 @@ export default function UserProfile({ params }: { params: { address: string } })
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-3xl p-8 max-w-3xl mx-auto transition-all duration-300 ease-in-out">
-      {isLoading && <LoadingOverlay />}
       <Link href="/" className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:underline mb-6 transition-all duration-300 ease-in-out">
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Home
@@ -214,6 +215,11 @@ export default function UserProfile({ params }: { params: { address: string } })
           </button>
         )}
       </div>
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      )}
     </div>
   );
 }
