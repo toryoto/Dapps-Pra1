@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const contractAddress = "0x0165878A594ca255338adfa4d48449f69242Eb8F";
+const contractAddress = "0x3Cd556A69C4908Cd1034d29c10D6250E712F1EB3";
 const contractABI = abi.abi;
 
 // ブロックチェーンから取得する生のEchoデータ（チェーン上に保存）
