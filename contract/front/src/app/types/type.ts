@@ -4,6 +4,14 @@ export interface EchoDetailsProps {
   linkTo?: string;
 }
 
+// ブロックチェーンから取得する生のEchoデータ（チェーン上に保存）
+export interface RawEcho {
+  id: number;
+  echoer: string;
+  cid: string;
+  timestamp: number;
+}
+
 export interface ProcessedEcho {
   id: number;
   address: string;

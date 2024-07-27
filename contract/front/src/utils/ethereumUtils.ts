@@ -2,28 +2,13 @@ import { ethers } from "ethers";
 import abi from "../app/utils/EthEcho.json";
 // import { create } from 'kubo-rpc-client';
 import dotenv from 'dotenv';
+import { ProcessedEcho, RawEcho } from "@/app/types/type";
 
 dotenv.config();
 
 const contractAddress = "0x3Cd556A69C4908Cd1034d29c10D6250E712F1EB3";
 const contractABI = abi.abi;
 
-// ブロックチェーンから取得する生のEchoデータ（チェーン上に保存）
-interface RawEcho {
-  id: number;
-  echoer: string;
-  cid: string;
-  timestamp: number;
-}
-
-// IPFSからメッセージを取得し、加工後のEchoデータ
-interface ProcessedEcho {
-  id: number;
-  address: string;
-  timestamp: Date;
-  cid: string;
-  message: string | null;
-}
 export const getEthereumObject = () => (window as any).ethereum;
 
 export const connectWallet = async (): Promise<string | null> => {
