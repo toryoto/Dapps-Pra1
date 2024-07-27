@@ -11,7 +11,6 @@ import {
   connectWallet
 } from '@/utils/profileContract';
 import { getProfileDetailsFromPinata } from '@/app/api/pinata/pinataUtils';
-import { LoadingOverlay } from '@/app/components/LoadingOverlay';
 interface UserProfile {
   name: string;
   bio: string;
