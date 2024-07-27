@@ -127,30 +127,3 @@ export const removeEcho = async (echoId: number): Promise<boolean> => {
     throw error;
   }
 }
-
-// 関数に渡される関数→コールバック関数
-// 受け取る関数は引数を3つ取り、戻り値はvoid
-// export const setupEchoListener = (callback: (from: string, timestamp: number, cid: string) => void): (() => void) | undefined => {
-//   getEthEchoContract().then(contract => {
-//     if (contract) {
-//       // スマートコントラクタからNewEchoが呼ばれるたびにcallbackを実行
-//       contract.on("NewEcho", callback);
-//       // イベントリスナーを解除する
-//       return () => contract.off("NewEcho", callback);
-//     }
-//   });
-
-//   return undefined;
-// };
-
-// DeleteEchoイベントをリッスンし、Echoが削除されたときにコールバック関数を実行
-// export const setupDeleteEchoListener = (callback: (echoId: number, from: string) => void): (() => void) | undefined => {
-//   getEthEchoContract().then(contract => {
-//     if (contract) {
-//       contract.on("DeleteEcho", callback);
-//       return () => contract.off("DeleteEcho", callback);
-//     }
-//   });
-
-//   return undefined;
-// };
