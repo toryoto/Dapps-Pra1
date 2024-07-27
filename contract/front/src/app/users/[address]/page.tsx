@@ -20,10 +20,10 @@ interface UserProfile {
 export default function UserProfile({ params }: { params: { address: string } }) {
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({ name: '', bio: '', imageHash: '' });
-  const [originalProfile, setOriginalProfile] = useState<UserProfile>({ name: '', bio: '', imageHash: '' });
   const [message, setMessage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentAccount, setCurrentAccount] = useState<string | null>(null);
 
   async function fetchProfile(address: string) {
     setIsLoading(true);
@@ -48,7 +48,6 @@ export default function UserProfile({ params }: { params: { address: string } })
         imageHash: profileDetails?.imageHash
       };
       setProfile(updatedProfile);
-      setOriginalProfile(updatedProfile);
       setMessage(null);
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -60,18 +59,23 @@ export default function UserProfile({ params }: { params: { address: string } })
 
   useEffect(() => {
     setIsLoading(true);
+    // 自分のウォレットアドレスを
+    const checkWalletConnection = async() => {
+      const account = await connectWallet()
+      if (!account) return;
+      else setCurrentAccount(account);
+    };
+    checkWalletConnection();
+
     fetchProfile(params.address);
     setIsLoading(false);
   }, [params.address]);
 
+  // ウォレットに接続済みかつ自分のアカウントのみ編集できる
+  const canEdit = currentAccount && (currentAccount.toLowerCase() === params.address.toLowerCase());
+
   async function handleUpdateProfile() {
     setIsLoading(true);
-
-    const account = await connectWallet();
-    if (!account) {
-      setMessage('Please connect your wallet');
-      return;
-    }
 
     try {
       const formData = new FormData();
@@ -185,6 +189,7 @@ export default function UserProfile({ params }: { params: { address: string } })
         </div>
       </div>
 
+
       <div className="mt-8 flex justify-end space-x-4">
         {isEditing ? (
           <>
@@ -206,12 +211,14 @@ export default function UserProfile({ params }: { params: { address: string } })
             </button>
           </>
         ) : (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="px-6 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-300 ease-in-out transform hover:scale-105 flex items-center"
-          >
-            <Edit2 className="mr-2 h-5 w-5" /> Edit Profile
-          </button>
+          canEdit && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="px-6 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-300 ease-in-out transform hover:scale-105 flex items-center"
+            >
+              <Edit2 className="mr-2 h-5 w-5" /> Edit Profile
+            </button>
+          )
         )}
       </div>
       {isLoading && (
