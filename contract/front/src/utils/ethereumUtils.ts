@@ -35,15 +35,22 @@ const getEthEchoContract = async () => {
 };
 
 // 読み取り専用のコントラクト
-const getReadOnlyContract = async () => {
-  const provider = new ethers.JsonRpcProvider("https://rpc.sepolia.org");
-  // コントラクトのインスタンス化
-  return new ethers.Contract(
-    contractAddress,
-    contractABI,
-    provider
-  );
-}
+const getReadOnlyContract = () => {
+  try {
+    // JsonRpcProvider を使用して、読み取り専用のプロバイダーを作成
+    const provider = new ethers.JsonRpcProvider("https://rpc.sepolia.org");
+    
+    // プロバイダーを使用してコントラクトインスタンスを作成
+    return new ethers.Contract(
+      contractAddress,
+      contractABI,
+      provider
+    );
+  } catch (error) {
+    console.error("Failed to create read-only contract instance:", error);
+    return null;
+  }
+};
 
 export const writeEchoContract = async (message: string) => {
   const contract = await getEthEchoContract();
@@ -77,7 +84,7 @@ export const writeEchoContract = async (message: string) => {
 };
 
 export const getAllEchoes = async (): Promise<ProcessedEcho[] | null> => {
-  const contract = await getReadOnlyContract();
+  const contract = await getEthEchoContract();
   if (!contract) return null;
 
   try {

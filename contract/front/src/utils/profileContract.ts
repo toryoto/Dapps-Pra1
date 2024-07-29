@@ -74,7 +74,7 @@ export async function updateProfileOnBlockchain(detailsCID: string): Promise<boo
 
 export async function getProfileFromBlockchain(address: string): Promise<ProcessedProfile | null> {
   try {
-    const contract = await getReadOnlyContract();
+    const contract = await getSignerontract();
     if (!contract) return null;
 
     const profile: RawProfile = await contract.getProfile(address);
@@ -91,7 +91,7 @@ export async function getProfileFromBlockchain(address: string): Promise<Process
 
 export async function hasProfileOnBlockchain(address: string): Promise<boolean> {
   try {
-    const contract = await getReadOnlyContract();
+    const contract = await getSignerontract();
     if (!contract) return false;
 
     return await contract.hasProfile(address);
