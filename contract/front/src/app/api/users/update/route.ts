@@ -1,7 +1,7 @@
 // プロフィールの値を受け取り、Pinataに保存、ブロックチェーン上に保存する処理を行う
 import { NextRequest, NextResponse } from 'next/server';
 import { ProfileDetails } from '@/app/types/type';
-import { uploadProfileDetailsToPinata, uploadProfileImageToPinata } from '../../pinataUtils';
+import { uploadProfileDetailsToPinata, uploadProfileImageToPinata } from '../../pinata/pinataUtils';
 
 export async function POST(request: NextRequest) {
   try {
