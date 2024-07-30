@@ -8,7 +8,7 @@ interface RawProfile {
 }
 
 // 読み取り専用のコントラクトを使用してサーバーサイドでプロフィール詳細を取得して返す処理
-export async function GET(request: NextRequest, { params }: { params: { address: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { address: string } }): Promise<NextResponse> {
   try {
     // リクエストURLからaddressを取得
     const address = params.address;
@@ -40,6 +40,6 @@ export async function GET(request: NextRequest, { params }: { params: { address:
     });
   } catch (error) {
     console.error("Failed to create read-only contract instance:", error);
-    return null;
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

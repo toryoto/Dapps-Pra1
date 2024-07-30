@@ -72,7 +72,7 @@ export const writeEchoContract = async (message: string) => {
   }
 };
 
-export const getAllEchoes = async (): Promise<ProcessedEcho[] | null> => {
+export const getAllEchoes = async ()=> {
   try {
     // サーバーサイドでは読み取り専用コントラクトを使用してすべてのEchoを取得
     const res = await fetch('/api/echoes');
