@@ -4,13 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from "next/link";
 import { User, Edit2, Save, X, ArrowLeft  } from 'lucide-react';
-import {
-  getProfileFromBlockchain,
-  updateProfileOnBlockchain,
-  hasProfileOnBlockchain,
-  connectWallet
-} from '@/utils/profileContract';
-import { getProfileDetailsFromPinata } from '@/app/api/pinata/pinataUtils';
+import { updateProfileOnBlockchain, connectWallet, getProfile } from '@/utils/profileContract';
 interface UserProfile {
   name: string;
   bio: string;
@@ -28,23 +22,12 @@ export default function UserProfile({ params }: { params: { address: string } })
   async function fetchProfile(address: string) {
     setIsLoading(true);
     try {
-      const hasProfile = await hasProfileOnBlockchain(address);
-      if (!hasProfile) {
-        setProfile({ name: 'No Name', bio: 'No Bio', imageHash: '' });
-        return;
-      }
+      const profileDetails = await getProfile(address);
+      console.log(profileDetails);
 
-      // ブロックチェーン上からdetailsCIDを取得
-      const blockchainProfile = await getProfileFromBlockchain(address);
-      if (!blockchainProfile) {
-        throw new Error('Failed to fetch profile from blockchain');
-      }
-
-      // detailsCIDをもとにして、Pinataからプロフィールの値を取得
-      const profileDetails = await getProfileDetailsFromPinata(blockchainProfile.detailsCID);
       const updatedProfile = {
-        name: profileDetails?.name || 'No name',
-        bio: profileDetails?.bio || 'No Bio',
+        name: profileDetails?.name,
+        bio: profileDetails?.bio,
         imageHash: profileDetails?.imageHash
       };
       setProfile(updatedProfile);
@@ -58,7 +41,6 @@ export default function UserProfile({ params }: { params: { address: string } })
   }
 
   useEffect(() => {
-    // 自分のウォレットアドレスを
     const checkWalletConnection = async() => {
       const account = await connectWallet()
       if (!account) return;
@@ -83,7 +65,7 @@ export default function UserProfile({ params }: { params: { address: string } })
       if (imageFile) formData.append('imageFile', imageFile)
       else if (profile.imageHash) formData.append('imageHash', profile.imageHash)
     
-      const res = await fetch('/api/pinata/profile/update', {
+      const res = await fetch('/api/users/update', {
         method: 'POST',
         body: formData,
       });
