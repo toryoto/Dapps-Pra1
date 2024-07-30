@@ -4,16 +4,6 @@ import abi from "../app/utils/UserProfile.json";
 const contractAddress = "0x47e436Da5325fa4403eA39eed9Fb4c1E57624E60";
 const contractABI = abi.abi;
 
-interface RawProfile {
-  0: string;  // detailsCID(name, bio, imageCID)
-  1: bigint;  // lastUpdated
-}
-
-interface ProcessedProfile {
-  detailsCID: string;
-  lastUpdated: Date;
-}
-
 export const getEthereumObject = () => (window as any).ethereum;
 
 export const connectWallet = async (): Promise<string | null> => {
@@ -32,16 +22,11 @@ export const connectWallet = async (): Promise<string | null> => {
   }
 };
 
-// 読み取り専用のコントラクト
-const getReadOnlyContract = async () => {
-  const provider = new ethers.JsonRpcProvider("https://rpc.sepolia.org");
-    
-  // コントラクトのインスタンス化
-  return new ethers.Contract(
-    contractAddress,
-    contractABI,
-    provider
-  );
+// サーバーサイドで呼ぶ読み込み専用コントラクトを取得するメソッド
+export const getReadOnlyContract = async () => {
+  const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_API_URL);
+  const contract = new ethers.Contract(contractAddress, contractABI, provider);
+  return contract;
 }
 
 // 書き込み可能なコントラクト
@@ -72,31 +57,15 @@ export async function updateProfileOnBlockchain(detailsCID: string): Promise<boo
   }
 };
 
-export async function getProfileFromBlockchain(address: string): Promise<ProcessedProfile | null> {
+export async function getProfile(address: string) {
   try {
-    const contract = await getSignerontract();
-    if (!contract) return null;
-
-    const profile: RawProfile = await contract.getProfile(address);
-    
-    return {
-      detailsCID: profile[0],
-      lastUpdated: new Date(Number(profile[1]) * 1000)
-    };
+    // サーバーサイドでは読み取り専用コントラクトを使用してユーザプロフィールを取得
+    const res = await fetch(`/api/users/${address}`);
+    if (!res.ok) throw new Error('Failed to fetch profile');
+    const data = await res.json();
+    return data;
   } catch (error) {
     console.error("Failed to get profile:", error);
     return null;
-  }
-}
-
-export async function hasProfileOnBlockchain(address: string): Promise<boolean> {
-  try {
-    const contract = await getSignerontract();
-    if (!contract) return false;
-
-    return await contract.hasProfile(address);
-  } catch (error) {
-    console.error("Failed to check if profile exists:", error);
-    return false;
   }
 }
