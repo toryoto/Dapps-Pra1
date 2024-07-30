@@ -34,6 +34,13 @@ const getEthEchoContract = async () => {
   return new ethers.Contract(contractAddress, contractABI, signer);
 };
 
+// サーバーサイドで呼ぶ読み込み専用コントラクトを取得するメソッド
+export const getReadOnlyContract = async () => {
+  const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_API_URL);
+  const contract = new ethers.Contract(contractAddress, contractABI, provider);
+  return contract;
+}
+
 export const writeEchoContract = async (message: string) => {
   const contract = await getEthEchoContract();
   if (!contract) return null;
