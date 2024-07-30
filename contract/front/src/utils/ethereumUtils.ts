@@ -34,23 +34,12 @@ const getEthEchoContract = async () => {
   return new ethers.Contract(contractAddress, contractABI, signer);
 };
 
-// 読み取り専用のコントラクト
-const getReadOnlyContract = () => {
-  try {
-    // JsonRpcProvider を使用して、読み取り専用のプロバイダーを作成
-    const provider = new ethers.JsonRpcProvider("https://rpc.sepolia.org");
-    
-    // プロバイダーを使用してコントラクトインスタンスを作成
-    return new ethers.Contract(
-      contractAddress,
-      contractABI,
-      provider
-    );
-  } catch (error) {
-    console.error("Failed to create read-only contract instance:", error);
-    return null;
-  }
-};
+// サーバーサイドで呼ぶ読み込み専用コントラクトを取得するメソッド
+export const getReadOnlyContract = async () => {
+  const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_API_URL);
+  const contract = new ethers.Contract(contractAddress, contractABI, provider);
+  return contract;
+}
 
 export const writeEchoContract = async (message: string) => {
   const contract = await getEthEchoContract();
@@ -83,35 +72,14 @@ export const writeEchoContract = async (message: string) => {
   }
 };
 
-export const getAllEchoes = async (): Promise<ProcessedEcho[] | null> => {
-  const contract = await getEthEchoContract();
-  if (!contract) return null;
-
+export const getAllEchoes = async ()=> {
   try {
-    // ブロックチェーン上から全てのデータを取得する（以下が送られてくるデータ）
-    // struct Echo {
-    //   uint256 id;
-    //   address echoer;
-    //   string cid;
-    //   uint256 timestamp;
-    // }
-
-    const echoes = await contract.getAllEchoes();
-
-    const processedEchoes: ProcessedEcho[] = await Promise.all(echoes.map(async (echo: RawEcho, index: number) => {
-      const res = await fetch(`/api/pinata/getMessage?cid=${echo.cid}`);
-      const { message } = await res.json();
-      
-      return {
-        id: Number(echo.id),
-        address: echo.echoer,
-        timestamp: new Date(Number(echo.timestamp) * 1000).toLocaleDateString('sv-SE'),
-        cid: echo.cid,
-        message: message,
-      };
-    }));
-
-    return processedEchoes;
+    // サーバーサイドでは読み取り専用コントラクトを使用してすべてのEchoを取得
+    const res = await fetch('/api/echoes');
+    if (!res.ok) throw new Error('Failed to fetch echoes');
+    
+    const data = await res.json();
+    return data;
   } catch (error) {
     console.error("Failed to get all echoes:", error);
     return null;
