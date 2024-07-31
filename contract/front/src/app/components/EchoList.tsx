@@ -1,8 +1,7 @@
 import React from "react";
-import Link from "next/link";
 import { Trash2 } from "lucide-react";
 import { EchoDetails } from "./EchoDetails";
-import { ProcessedEcho, EchoDetailsProps } from "../types/type";
+import { ProcessedEcho } from "../types/type";
 
 interface EchoListProps {
   allEchoes: ProcessedEcho[];

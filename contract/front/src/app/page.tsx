@@ -32,7 +32,6 @@ export default function Home() {
       const account = await connectWallet();
       if (account) {
         setCurrentAccount(account);
-        //await fetchAllEchoes();
       }
     } finally {
       setIsLoading(false);
