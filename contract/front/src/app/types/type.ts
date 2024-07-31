@@ -15,7 +15,7 @@ export interface RawEcho {
 export interface ProcessedEcho {
   id: number;
   address: string;
-  timestamp: Date;
+  timestamp: string;
   cid: string;
   message: string | null;
 }

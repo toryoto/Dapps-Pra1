@@ -14,7 +14,7 @@ const truncateString = (str: string, startChars: number, endChars: number) => {
   return `${str.slice(0, startChars)}...${str.slice(-endChars)}`;
 };
 
-const formatDate = (timestamp: Date): string => {
+const formatDate = (timestamp: string): string => {
   const date = new Date(timestamp);
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
