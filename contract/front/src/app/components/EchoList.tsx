@@ -1,8 +1,7 @@
 import React from "react";
-import Link from "next/link";
 import { Trash2 } from "lucide-react";
 import { EchoDetails } from "./EchoDetails";
-import { ProcessedEcho, EchoDetailsProps } from "../types/type";
+import { ProcessedEcho } from "../types/type";
 
 interface EchoListProps {
   allEchoes: ProcessedEcho[];
@@ -13,6 +12,17 @@ interface EchoListProps {
 const truncateString = (str: string, startChars: number, endChars: number) => {
   if (str.length <= startChars + endChars) return str;
   return `${str.slice(0, startChars)}...${str.slice(-endChars)}`;
+};
+
+const formatDate = (timestamp: string): string => {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hour = date.getHours().toString().padStart(2, '0');
+  const minute = date.getMinutes().toString().padStart(2, '0');
+
+  return `${year}/${month}/${day} ${hour}:${minute}`;
 };
 
 export const EchoList: React.FC<EchoListProps> = ({ allEchoes, currentAccount, onDeleteEcho }) => (
@@ -38,7 +48,7 @@ export const EchoList: React.FC<EchoListProps> = ({ allEchoes, currentAccount, o
           </div>
           <EchoDetails 
             title="Date" 
-            value={new Date(echo.timestamp).toLocaleString()} 
+            value={ formatDate(echo.timestamp) } 
           />
           <div className="sm:hidden">
             <EchoDetails 

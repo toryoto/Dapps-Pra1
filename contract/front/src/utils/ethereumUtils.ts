@@ -1,6 +1,5 @@
 import { ethers } from "ethers";
 import abi from "../app/utils/EthEcho.json";
-import { ProcessedEcho, RawEcho } from "@/app/types/type";
 
 const contractAddress = "0x3Cd556A69C4908Cd1034d29c10D6250E712F1EB3";
 const contractABI = abi.abi;
