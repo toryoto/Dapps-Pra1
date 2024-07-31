@@ -27,7 +27,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       return {
         id: Number(echo.id),
         address: echo.echoer,
-        timestamp: new Date(Number(echo.timestamp) * 1000).toLocaleDateString('sv-SE'),
+        timestamp: new Date(Number(echo.timestamp) * 1000).toLocaleString(),
         cid: echo.cid,
         message: message,
       };

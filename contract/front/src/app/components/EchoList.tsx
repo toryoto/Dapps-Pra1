@@ -15,6 +15,17 @@ const truncateString = (str: string, startChars: number, endChars: number) => {
   return `${str.slice(0, startChars)}...${str.slice(-endChars)}`;
 };
 
+const formatDate = (timestamp: Date): string => {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hour = date.getHours().toString().padStart(2, '0');
+  const minute = date.getMinutes().toString().padStart(2, '0');
+
+  return `${year}/${month}/${day} ${hour}:${minute}`;
+};
+
 export const EchoList: React.FC<EchoListProps> = ({ allEchoes, currentAccount, onDeleteEcho }) => (
   <div className="space-y-4">
     <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">All Echoes</h2>
@@ -38,7 +49,7 @@ export const EchoList: React.FC<EchoListProps> = ({ allEchoes, currentAccount, o
           </div>
           <EchoDetails 
             title="Date" 
-            value={new Date(echo.timestamp).toLocaleString()} 
+            value={ formatDate(echo.timestamp) } 
           />
           <div className="sm:hidden">
             <EchoDetails 
